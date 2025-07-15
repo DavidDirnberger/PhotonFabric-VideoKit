@@ -23,16 +23,32 @@ INSTALL_DIR="${INSTALL_DIR%/}"
 VENV_DIR="$INSTALL_DIR/venv"
 CONDA_DIR="${CONDA_DIR:-$INSTALL_DIR/miniconda}"
 
+# Directory of this script
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Extract optional src.tar.gz located next to this script
+ARCHIVE="$SCRIPT_DIR/src.tar.gz"
+if [[ -f "$ARCHIVE" ]]; then
+  log "Entpacke src.tar.gz nach $INSTALL_DIR"
+  tar -xzf "$ARCHIVE" -C "$INSTALL_DIR"
+fi
 
 CONDA_PREFIX="$CONDA_DIR/envs/$ENV_NAME"
 ALIAS_LINE="alias $VIDEO_CMD=\"$CONDA_PREFIX/bin/python $INSTALL_DIR/videoManager.py\""
+
+# Ask if AI features should be installed
+if ask_question "Möchtest du KI-Funktionen (Real-ESRGAN, PyTorch) installieren?" "y"; then
+  INSTALL_AI=true
+else
+  INSTALL_AI=false
+fi
 
 
 INSTALL_CUDA_TOOLKIT=false
 for a in "$@"; do [[ "$a" == "--cuda-toolkit" ]] && INSTALL_CUDA_TOOLKIT=true; done
 
 # optional: CUDA Toolkit (nur falls Flag gesetzt)
-if $INSTALL_CUDA_TOOLKIT; then
+if $INSTALL_CUDA_TOOLKIT && $INSTALL_AI; then
   log "Installiere NVIDIA CUDA Toolkit 11.8 (deb‑local) …"
   wget -qO /tmp/cuda-repo.deb "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-ubuntu2204.pin"
   sudo mv /tmp/cuda-repo.deb /etc/apt/preferences.d/cuda-repository-pin-600
