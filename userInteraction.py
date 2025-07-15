@@ -98,6 +98,72 @@ def display_image_in_kitty(image_path: str | Path) -> None:
 
 
 
+def get_first_sign(line):
+    """Gibt das erste sichtbare Zeichen (ohne führende Leerzeichen) zurück."""
+    match = re.match(r'^[\s]*([\S])', line)
+    return match.group(1) if match else ''
+
+def make_header_deco(lineprog, text):
+    """Druckt eine Linie aus = entsprechend der Textlänge, eingerückt wie der Text."""
+    wholelen = len(text)
+    trimmed = text.lstrip()
+    leading_space = wholelen - len(trimmed)
+    print(' ' * leading_space + '=' * len(trimmed))
+    if lineprog == 1:
+        print()
+
+def show_infofile(file):
+    # Farben wie im Bash-Skript
+    header = '\033[38;5;117m'
+    subheader = '\033[38;5;135m'
+    textcol = '\033[38;5;148m'
+    end = '\033[0m'
+
+    if not file:
+        return
+    extension = file.split('.')[-1] if '.' in file else ''
+    if not extension:
+        file = file + '.info'
+    else:
+        if "info" not in extension:
+            file = re.sub(r'\.' + re.escape(extension) + r'$', '.info', file)
+
+    if not os.path.isfile(file):
+        return
+
+    print("\n\n")
+
+    with open(file, 'r', encoding='utf-8') as f:
+        for line in f:
+            sline = line.rstrip('\n')
+            fnum = 0
+            snum = line.lstrip().count('#')
+            # Bash-Logik nachgebildet
+            if snum == 1 and get_first_sign(line) == '#':
+                templine = line.replace('#', '', 1)
+                snum2 = templine.lstrip().count('#')
+                if snum2 == 1 and get_first_sign(templine) == '#':
+                    sline = templine.replace('#', '', 1).rstrip('\n')
+                    fnum += 1
+                else:
+                    sline = templine.rstrip('\n')
+                fnum += 1
+            if fnum == 1:
+                nline = f"{subheader}{sline}{end}"
+                print(nline)
+            elif fnum == 2:
+                print(header, end="")
+                nline = f"       ================= {sline} ================="
+                make_header_deco(1, nline)
+                print(nline)
+                make_header_deco(0, nline)
+                print(end, end="")
+            else:
+                nline = f"{textcol}{sline}{end}"
+                print(nline)
+    print()
+
+
 
 def expand_glob_patterns(file_list):
     """Expands file patterns like 'conan%.mp4' to real file paths."""

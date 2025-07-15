@@ -8,7 +8,6 @@ set -euo pipefail
 # Suppress tarfile DeprecationWarnings during Conda operations
 export PYTHONWARNINGS="${PYTHONWARNINGS:-ignore::DeprecationWarning}"
 
-
 ENV_NAME="videoManager"
 PYTHON_VERSION="3.11"
 TORCH_VER="2.2.1"
@@ -47,6 +46,87 @@ log()  { echo -e "\e[32m[install]\e[0m $*"; }
 warn() { echo -e "\e[33m[install]\e[0m $*"; }
 err()  { echo -e "\e[31m[install]\e[0m $*" >&2; exit 1; }
 
+
+ask_question() {
+    # ANSI colors for yellow-orange (color 214) and bold
+    local COLOR="\e[1;38;5;214m"
+    local RESET="\e[0m"
+    local BOLD="\e[1m"
+    
+    local question="$1"
+    shift
+
+    local choices=()
+    local default=""
+    local default_index=1
+
+    # Collect answer options, determine default
+    local idx=1
+    for opt in "$@"; do
+        if [[ "$opt" =~ ^# ]]; then
+            default="${opt:1}"
+            default_index=$idx
+            choices+=("${opt:1}")
+        else
+            choices+=("$opt")
+        fi
+        ((idx++))
+    done
+
+    # If no default found, use the first option
+    if [ -z "$default" ]; then
+        default="${choices[0]}"
+        default_index=1
+    fi
+
+    # Print the question (bold + yellow-orange)
+    echo -e -n "${BOLD}${COLOR}${question}${RESET}\n"
+
+    # Print the answer options
+    for i in "${!choices[@]}"; do
+        local disp="${choices[$i]}"
+        # Mark default option
+        if [ $((i+1)) -eq $default_index ]; then
+            echo -e "  $((i+1)). $disp ${COLOR}[Default]${RESET}"
+        else
+            echo "  $((i+1)). $disp"
+        fi
+    done
+
+    # Prompt for input
+    echo -ne "\nPlease choose an option (number or name, Enter for default: ${default}): "
+    local input
+    read input
+
+    # If input is empty, return default
+    if [ -z "$input" ]; then
+        echo "$default"
+        return 0
+    fi
+
+    # Check if input is a number
+    if [[ "$input" =~ ^[0-9]+$ ]]; then
+        if (( input >= 1 && input <= ${#choices[@]} )); then
+            echo "${choices[$((input-1))]}"
+            return 0
+        fi
+    fi
+
+    # Check input as text (case-insensitive)
+    local input_lc=$(echo "$input" | tr '[:upper:]' '[:lower:]')
+    for i in "${!choices[@]}"; do
+        local choice_lc=$(echo "${choices[$i]}" | tr '[:upper:]' '[:lower:]')
+        if [[ "$input_lc" == "$choice_lc" ]]; then
+            echo "${choices[$i]}"
+            return 0
+        fi
+    done
+
+    # If nothing matches: return default
+    echo "$default"
+}
+
+
 # Robust pip installation with retries
 pip_install() {
   local attempts=4
@@ -74,6 +154,18 @@ download_with_retries() {
     sleep 5
   done
   err "Failed to download $url"
+}
+
+
+# Run conda/mamba commands with retries to handle transient network issues
+conda_retry() {
+  local attempts=3
+  for ((i=1; i<=attempts; i++)); do
+    $CMD_INSTALL "$@" && return 0
+    warn "Conda command failed (Attempt $i/$attempts)"
+    sleep 5
+  done
+  err "Conda command failed after $attempts attempts"
 }
 
 # Download typical Real-ESRGAN weights
@@ -138,7 +230,7 @@ fi
 # ───────────────────── Create/Activate Env ───────────────────────────
 if ! conda env list | grep -qE "^${ENV_NAME}[[:space:]]"; then
   echo "🆕 Erstelle Conda-Environment '$ENV_NAME' (Python $PYTHON_VERSION)..."
-  $CMD_INSTALL create -y -n "$ENV_NAME" python="$PYTHON_VERSION"
+  conda_retry create -y -n "$ENV_NAME" python="$PYTHON_VERSION"
 fi
 
 conda activate "$ENV_NAME"
@@ -156,13 +248,13 @@ fi
 
 # ───────────────────── PyTorch & Vision ──────────────────────────────
 if [ "$GPU" = true ]; then
-  $CMD_INSTALL install -y pytorch="$TORCH_VER" torchvision="$VISION_VER" cudatoolkit=11.8 -c pytorch -c conda-forge
+  conda_retry install -y pytorch="$TORCH_VER" torchvision="$VISION_VER" cudatoolkit=11.8 -c pytorch -c conda-forge
 else
-  $CMD_INSTALL install -y pytorch="$TORCH_VER" torchvision="$VISION_VER" cpuonly -c pytorch -c conda-forge
+  conda_retry install -y pytorch="$TORCH_VER" torchvision="$VISION_VER" cpuonly -c pytorch -c conda-forge
 fi
 
 # ───────────────────── Sonstige Bibliotheken ─────────────────────────
-$CMD_INSTALL install -y \
+conda_retry install -y \
   ffmpeg pillow networkx sympy jinja2 fsspec filelock requests kiwisolver llvmlite -c conda-forge
 
 # ───────────────────── Real-ESRGAN Setup ─────────────────────────────

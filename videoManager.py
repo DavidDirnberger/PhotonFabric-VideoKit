@@ -1570,9 +1570,18 @@ def show_info(subcommand=None):
     if subcommand == "screencast":
         infofile = defin.SCREENCAST_INFO
     else:
-        base = os.path.splitext(os.path.abspath(__file__))[0]
-        infofile = f"{base}.{subcommand}.info" if subcommand else f"{base}.info"
-    subprocess.run(["bash", "-c", f"source ~/syscripts/functions/scripting.sh && show_infofile \"{infofile}\""])
+        script_path = os.path.abspath(__file__)
+        base = os.path.splitext(os.path.basename(script_path))[0]   # Nur Dateiname ohne Extension
+        dir_path = os.path.dirname(script_path)
+        infofiles_dir = os.path.join(dir_path, "infofiles")
+
+        if subcommand:
+            infofile = os.path.join(infofiles_dir, f"{base}.{subcommand}.info")
+        else:
+            infofile = os.path.join(infofiles_dir, f"{base}.info")
+
+    ui.show_infofile(infofile)
+#    subprocess.run(["bash", "-c", f"source ~/syscripts/functions/scripting.sh && show_infofile \"{infofile}\""])
     sys.exit(0)
 
 def interactive_menu():
