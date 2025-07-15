@@ -63,83 +63,34 @@ warn() { echo -e "\e[33m[install]\e[0m $*"; }
 err()  { echo -e "\e[31m[install]\e[0m $*" >&2; exit 1; }
 
 
+# Ask a yes/no question. Usage: ask_question "Prompt" [default]
 ask_question() {
-    # ANSI colors for yellow-orange (color 214) and bold
-    local COLOR="\e[1;38;5;214m"
-    local RESET="\e[0m"
-    local BOLD="\e[1m"
-    
-    local question="$1"
-    shift
+  local prompt="$1" default="${2:-y}" reply
+  while true; do
+    read -erp "\e[1;36m${prompt} [y/n] (default ${default}): \e[0m" reply
+    reply="${reply:-$default}"
+    case "$reply" in
+      [Yy]* ) return 0 ;;
+      [Nn]* ) return 1 ;;
+    esac
+  done
+}
 
-    local choices=()
-    local default=""
-    local default_index=1
 
-    # Collect answer options, determine default
-    local idx=1
-    for opt in "$@"; do
-        if [[ "$opt" =~ ^# ]]; then
-            default="${opt:1}"
-            default_index=$idx
-            choices+=("${opt:1}")
-        else
-            choices+=("$opt")
-        fi
-        ((idx++))
-    done
-
-    # If no default found, use the first option
-    if [ -z "$default" ]; then
-        default="${choices[0]}"
-        default_index=1
+# Ensure aria2c is installed for robust downloads
+ensure_aria2c() {
+  if ! command -v aria2c &>/dev/null; then
+    if command -v apt-get &>/dev/null; then
+      log "Installiere aria2 f\xC3\xBCr schnellere Downloads..."
+      sudo apt-get update -qq && sudo apt-get install -y aria2 || warn "aria2 Installation fehlgeschlagen"
+    elif command -v brew &>/dev/null; then
+      brew install aria2 || warn "aria2 Installation fehlgeschlagen"
+    elif command -v pacman &>/dev/null; then
+      sudo pacman -Sy --noconfirm aria2 || warn "aria2 Installation fehlgeschlagen"
+    elif command -v dnf &>/dev/null; then
+      sudo dnf install -y aria2 || warn "aria2 Installation fehlgeschlagen"
     fi
-
-    # Print the question (bold + yellow-orange)
-    echo -e -n "${BOLD}${COLOR}${question}${RESET}\n"
-
-    # Print the answer options
-    for i in "${!choices[@]}"; do
-        local disp="${choices[$i]}"
-        # Mark default option
-        if [ $((i+1)) -eq $default_index ]; then
-            echo -e "  $((i+1)). $disp ${COLOR}[Default]${RESET}"
-        else
-            echo "  $((i+1)). $disp"
-        fi
-    done
-
-    # Prompt for input
-    echo -ne "\nPlease choose an option (number or name, Enter for default: ${default}): "
-    local input
-    read input
-
-    # If input is empty, return default
-    if [ -z "$input" ]; then
-        echo "$default"
-        return 0
-    fi
-
-    # Check if input is a number
-    if [[ "$input" =~ ^[0-9]+$ ]]; then
-        if (( input >= 1 && input <= ${#choices[@]} )); then
-            echo "${choices[$((input-1))]}"
-            return 0
-        fi
-    fi
-
-    # Check input as text (case-insensitive)
-    local input_lc=$(echo "$input" | tr '[:upper:]' '[:lower:]')
-    for i in "${!choices[@]}"; do
-        local choice_lc=$(echo "${choices[$i]}" | tr '[:upper:]' '[:lower:]')
-        if [[ "$input_lc" == "$choice_lc" ]]; then
-            echo "${choices[$i]}"
-            return 0
-        fi
-    done
-
-    # If nothing matches: return default
-    echo "$default"
+  fi
 }
 
 
@@ -215,6 +166,7 @@ fi
 export PATH="$CONDA_DIR/bin:$PATH"
 if ! command -v conda &>/dev/null && ! command -v mamba &>/dev/null; then
   log "🔄 Conda nicht gefunden – installiere Miniconda lokal..."
+  ensure_aria2c
   INSTALLER="Miniconda3-latest-Linux-x86_64.sh"
   URL="https://repo.anaconda.com/miniconda/$INSTALLER"
 
