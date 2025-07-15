@@ -5,6 +5,10 @@
 # -----------------------------------------------------------------------------
 set -euo pipefail
 
+# Suppress tarfile DeprecationWarnings during Conda operations
+export PYTHONWARNINGS="${PYTHONWARNINGS:-ignore::DeprecationWarning}"
+
+
 ENV_NAME="videoManager"
 PYTHON_VERSION="3.11"
 TORCH_VER="2.2.1"
@@ -15,10 +19,14 @@ VIDEO_CMD="video"
 DEFAULT_BASE="$HOME/syscripts/videoManager"
 read -erp "Installationsverzeichnis [$DEFAULT_BASE]: " INSTALL_DIR
 INSTALL_DIR="${INSTALL_DIR:-$DEFAULT_BASE}"
+# remove possible trailing slash
+INSTALL_DIR="${INSTALL_DIR%/}"
 VENV_DIR="$INSTALL_DIR/venv"
 CONDA_DIR="${CONDA_DIR:-$INSTALL_DIR/miniconda}"
 
-ALIAS_LINE="alias $VIDEO_CMD=\"$CONDA_DIR/envs/$ENV_NAME/bin/python $INSTALL_DIR/videoManager.py\""
+
+CONDA_PREFIX="$CONDA_DIR/envs/$ENV_NAME"
+ALIAS_LINE="alias $VIDEO_CMD=\"$CONDA_PREFIX/bin/python $INSTALL_DIR/videoManager.py\""
 
 
 INSTALL_CUDA_TOOLKIT=false
@@ -39,6 +47,51 @@ log()  { echo -e "\e[32m[install]\e[0m $*"; }
 warn() { echo -e "\e[33m[install]\e[0m $*"; }
 err()  { echo -e "\e[31m[install]\e[0m $*" >&2; exit 1; }
 
+# Robust pip installation with retries
+pip_install() {
+  local attempts=4
+  local args=("$@")
+  for ((i=1; i<=attempts; i++)); do
+    python -m pip install --retries 6 --timeout 60 "${args[@]}" && return 0
+    warn "pip install failed (Attempt $i/$attempts)"
+    sleep 10
+  done
+  err "pip install failed after $attempts attempts"
+}
+
+
+
+# Download utility with retries and aria2c/curl fallback
+download_with_retries() {
+  local url=$1 dest=$2 attempts=3
+  for ((i=1; i<=attempts; i++)); do
+    if command -v aria2c &>/dev/null; then
+      aria2c -c -x16 -s16 -k1M -o "$(basename "$dest")" -d "$(dirname "$dest")" "$url" && return 0
+    else
+      curl -L --retry 5 --retry-delay 5 -C - "$url" -o "$dest" && return 0
+    fi
+    warn "Download failed (Attempt $i/$attempts)"
+    sleep 5
+  done
+  err "Failed to download $url"
+}
+
+# Download typical Real-ESRGAN weights
+download_realesrgan_models() {
+  local dest="$RE_DIR/weights"
+  mkdir -p "$dest"
+  declare -A urls=(
+    [RealESRGAN_x4plus.pth]='https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth'
+    [RealESRGAN_x4plus_anime_6B.pth]='https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.2.4/RealESRGAN_x4plus_anime_6B.pth'
+    [realesr-general-x4v3.pth]='https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.5.0/realesr-general-x4v3.pth'
+  )
+  for f in "${!urls[@]}"; do
+    [ -f "$dest/$f" ] && continue
+    download_with_retries "${urls[$f]}" "$dest/$f"
+  done
+}
+
+
 
 #======================== Alias Setup ============================
 if ! grep -qs "$ALIAS_LINE" "$HOME/.bashrc" "$HOME/.bash_aliases" 2>/dev/null; then
@@ -56,7 +109,8 @@ if ! command -v conda &>/dev/null && ! command -v mamba &>/dev/null; then
   log "🔄 Conda nicht gefunden – installiere Miniconda lokal..."
   INSTALLER="Miniconda3-latest-Linux-x86_64.sh"
   URL="https://repo.anaconda.com/miniconda/$INSTALLER"
-  curl -fsSL "$URL" -o "/tmp/$INSTALLER"
+
+  download_with_retries "$URL" "/tmp/$INSTALLER"
   bash "/tmp/$INSTALLER" -b -p "$CONDA_DIR"
   rm "/tmp/$INSTALLER"
   export PATH="$CONDA_DIR/bin:$PATH"
@@ -71,6 +125,15 @@ fi
 # shellcheck disable=SC1091
 source "$(conda info --base)/etc/profile.d/conda.sh"
 source "$CONDA_DIR/etc/profile.d/conda.sh"
+
+
+# Auto accept Terms of Service for Anaconda channels if supported
+if conda --help | grep -q "tos"; then
+  conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main >/dev/null 2>&1 || true
+  conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r >/dev/null 2>&1 || true
+fi
+
+
 
 # ───────────────────── Create/Activate Env ───────────────────────────
 if ! conda env list | grep -qE "^${ENV_NAME}[[:space:]]"; then
@@ -103,21 +166,13 @@ $CMD_INSTALL install -y \
   ffmpeg pillow networkx sympy jinja2 fsspec filelock requests kiwisolver llvmlite -c conda-forge
 
 # ───────────────────── Real-ESRGAN Setup ─────────────────────────────
-RE_DIR="$HOME/real-esrgan"
+RE_DIR="$INSTALL_DIR/real-esrgan"
 if [ -d "$RE_DIR" ]; then
   git -C "$RE_DIR" pull --quiet
 else
   git clone --quiet https://github.com/xinntao/Real-ESRGAN "$RE_DIR"
 fi
-python -m pip install -q -r "$RE_DIR/requirements.txt"
-python "$RE_DIR/scripts/download_pretrained_models.py" >/dev/null
-
-# ───────────────────── Alias einrichten ──────────────────────────────
-CONDA_PREFIX="$CONDA_DIR/envs/$ENV_NAME"
-ALIAS_LINE="alias $VIDEO_CMD='${CONDA_PREFIX}/bin/python $PWD/videoManager.py'"
-if ! grep -qxF "$ALIAS_LINE" ~/.bashrc ~/.zshrc 2>/dev/null; then
-  echo "$ALIAS_LINE" >> ~/.bashrc
-  echo "Alias '$VIDEO_CMD' in ~/.bashrc hinzugefügt"
-fi
+pip_install -q -r "$RE_DIR/requirements.txt"
+download_realesrgan_models
 
 echo "🎉 Fertig! Aktiviere mit: conda activate $ENV_NAME"
