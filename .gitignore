@@ -1,0 +1,15 @@
+# Verzeichnisse
+.vscode/
+duration_estimation/            # Slash = Verzeichnis rekursiv ignorieren
+Real-ESRGAN/
+tmp/
+old/
+__pycache__/
+
+
+# Dateitypen
+*.mp4
+*.mkv
+*.log
+*.env
+
