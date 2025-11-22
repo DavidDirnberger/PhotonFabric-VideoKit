@@ -3,8 +3,7 @@
 
 A modular, ffmpeg-driven video toolkit with optional AI models – designed for **interactive use on the command line** _and_ for fully automated batch workflows.
 
-| ![PhotonFabric – VideoKit Logo](assets/logo.png) |
-|:-----------------------------------------------:|
+![PhotonFabric – VideoKit Logo](assets/logo.png)
 
 PhotonFabric VideoKit wraps common video tasks into focused subcommands:
 
