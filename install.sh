@@ -29,6 +29,7 @@ GREEN='\e[1;36m'; CEND='\e[0m'
 
 # ───────────────────────────── Language handling ────────────────────────────
 VM_LANG="en"
+IMPACT_OPT_IN="${IMPACT_OPT_IN:-}"
 declare -A INSTALL_I18N_DE=(
   ["Language set to %s."]="Sprache gesetzt auf %s."
   ["Prefer GPU acceleration if available?"]="GPU-Beschleunigung bevorzugen, falls verfuegbar?"
@@ -143,6 +144,30 @@ ask_prefer_gpu() {
   else
     PREFER_GPU=false
     log "User prefers CPU."
+  fi
+}
+
+# ───────────────── Impact: Hinweis + frühe Abfrage (EULA) ────────────────────
+prompt_impact_opt_in() {
+  # bereits entschieden oder via VIDEO_NO_PROPRIETARY_FONTS erzwungen?
+  if [[ "${VIDEO_NO_PROPRIETARY_FONTS:-0}" = "1" ]]; then
+    log "Skipping Impact/Corefonts download because VIDEO_NO_PROPRIETARY_FONTS=1."
+    IMPACT_OPT_IN="no"
+    return 0
+  fi
+  if [[ -n "${IMPACT_OPT_IN:-}" ]]; then
+    return 0
+  fi
+
+  log "[impact] The Impact typeface is part of Microsoft's Core fonts for the Web."
+  log "[impact] To comply with the EULA we only download the original impact32.exe from SourceForge after explicit consent."
+  log "[impact] License text: https://sourceforge.net/projects/corefonts/files/ (Microsoft Core Fonts EULA)."
+
+  if ask_question "Download Impact font (Impact 2.35) now? This requires accepting the Microsoft Core Fonts EULA." "n"; then
+    IMPACT_OPT_IN="yes"
+  else
+    IMPACT_OPT_IN="no"
+    warn "Impact font download skipped. GIF captions will use fallback fonts."
   fi
 }
 
@@ -313,24 +338,18 @@ install_impact_font() {
     return 0
   fi
 
-if [[ "${VIDEO_NO_PROPRIETARY_FONTS:-0}" = "1" ]]; then
-  log "Skipping Impact/Corefonts download because VIDEO_NO_PROPRIETARY_FONTS=1."
-  return 0
-fi
-
-
-  log "[impact] The Impact typeface is part of Microsoft's Core fonts for the Web."
-  log "[impact] To comply with the EULA we only download the original impact32.exe from SourceForge after explicit consent."
-  log "[impact] License text: https://sourceforge.net/projects/corefonts/files/ (Microsoft Core Fonts EULA)."
-
-  if ! ask_question "Download Impact font (Impact 2.35) now? This requires accepting the Microsoft Core Fonts EULA." "n"; then
+  if [[ "${VIDEO_NO_PROPRIETARY_FONTS:-0}" = "1" ]]; then
+    log "Skipping Impact/Corefonts download because VIDEO_NO_PROPRIETARY_FONTS=1."
+    return 0
+  fi
+  if [[ "${IMPACT_OPT_IN:-no}" != "yes" ]]; then
     warn "Impact font download skipped. GIF captions will use fallback fonts."
     return 0
   fi
 
   if ! ensure_cabextract "$os"; then
     warn "cabextract missing - Impact cannot be installed automatically. Please install the font manually."
-    return 1
+    return 0
   fi
 
   tmp="$(mktemp -d "${TMPDIR:-/tmp}/impact-font.XXXXXX")"
@@ -339,20 +358,20 @@ fi
   if ! download_with_retries "$impact_url" "$exe" 60 10; then
     warn "$(loc_printf "Impact installer download failed (%s)." "$impact_url")"
     rm -rf "$tmp"
-    return 1
+    return 0
   fi
 
   log "Extracting impact.ttf from impact32.exe via cabextract..."
   if ! cabextract -F impact.ttf -d "$tmp" "$exe" >/dev/null 2>&1; then
     warn "cabextract could not extract impact.ttf - please check manually."
     rm -rf "$tmp"
-    return 1
+    return 0
   fi
   extracted="$tmp/impact.ttf"
   if [ ! -f "$extracted" ]; then
     warn "impact.ttf missing in archive - installation skipped."
     rm -rf "$tmp"
-    return 1
+    return 0
   fi
 
   mkdir -p "$dest_dir"
@@ -1551,6 +1570,7 @@ PY
 
 # ──────────────────────────────── Main flow ────────────────────────────────
 ask_language
+prompt_impact_opt_in
 ask_prefer_gpu
 
 # Choose install base
