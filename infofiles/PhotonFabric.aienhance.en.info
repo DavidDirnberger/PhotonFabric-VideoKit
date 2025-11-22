@@ -6,7 +6,7 @@ Scales and enhances videos using AI models (Real-ESRGAN/RealCUGAN). Supports int
 
 ##Usage
 ##------
-video ai-enhance [FILES] [--aimodel MODEL] [--scale FACTOR] [--denoise STRENGTH] [--noise-level LEVEL] [--face-enhance] [--tta] [--blend] [--blend-opacity OPACITY] [--priority PROFILE] [--chunk N] [--output PATH]
+video aienhance [FILES] [--aimodel MODEL] [--scale FACTOR] [--denoise STRENGTH] [--noise-level LEVEL] [--face-enhance] [--tta] [--blend] [--blend-opacity OPACITY] [--priority PROFILE] [--chunk N] [--output PATH]
 
 ##Options & flags
 ##----------------

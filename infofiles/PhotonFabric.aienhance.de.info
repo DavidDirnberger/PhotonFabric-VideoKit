@@ -6,7 +6,7 @@ Skaliert und verbessert Videos mit KI-Modellen (Real-ESRGAN/RealCUGAN). Unterst�
 
 ##Aufruf
 ##------
-video ai-enhance [DATEIEN] [--aimodel MODELL] [--scale FAKTOR] [--denoise STÄRKE] [--noise-level LEVEL] [--face-enhance] [--tta] [--blend] [--blend-opacity OPACITY] [--priority PROFIL] [--chunk N] [--output PFAD]
+video aienhance [DATEIEN] [--aimodel MODELL] [--scale FAKTOR] [--denoise STÄRKE] [--noise-level LEVEL] [--face-enhance] [--tta] [--blend] [--blend-opacity OPACITY] [--priority PROFIL] [--chunk N] [--output PFAD]
 
 ##Optionen & Flags
 ##----------------

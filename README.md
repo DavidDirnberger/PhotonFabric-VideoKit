@@ -41,21 +41,21 @@ PhotonFabric – VideoKit is a **modular toolbox built around ffmpeg** (and opti
 - `gif` – animated GIF & meme creation
 - `metadata` – detailed metadata inspection & editing
 
-Every command lives in its own module and has a dedicated infofile under `infofiles/PhotonFabric.<subcommand>.en.info`.
+Every command lives in its own module and has a dedicated infofile under `infofiles/PhotonFabric.<subcommand>.en.info` called by `video <COMMAND> --help/-h`.
 
 ---
 
 ## 2. Requirements
 
 - **OS**: Primarily developed and tested on Linux.
-- **Runtime**: Python 3.x
+- **Runtime**: Python 3.10.x
 - **Core tools**:
   - `ffmpeg` and `ffprobe` (required)
 - **Optional for AI features**:
   - CUDA-capable GPU (for PyTorch backends)
   - AI models (Real-ESRGAN / RealCUGAN, etc.) – handled by the project’s installer / model manager.
 
-See the repository’s `install.sh` / documentation for the exact, up-to-date dependencies and model setup.
+See the repository’s `install.sh` for the exact, up-to-date dependencies and model setup.
 
 ---
 
@@ -66,51 +66,56 @@ See the repository’s `install.sh` / documentation for the exact, up-to-date de
 ### 3.1 Clone the repository
 
 ```bash
-git clone https://github.com/<your-account>/PhotonFabric-VideoKit.git
+git clone https://github.com/DavidDirnberger/PhotonFabric-VideoKit.git
 cd PhotonFabric-VideoKit
-3.2 Using the installer (recommended)
-If the project provides an install.sh:
+```
 
+### 3.2 Using the installer (recommended)
+
+```bash
 chmod +x install.sh
 ./install.sh
+```
 
-Typical responsibilities of the installer:
+The installer will:
 
-create a Python virtual environment
+- create an isolated Conda environment (PhotonFabricVideoKit)
+- install the required Python packages (with offline caches where possible)
+- check/install ffmpeg and ffprobe (via Conda or system packages)
+- optionally install ExifTool for robust metadata handling
+- detect OS and GPU to choose a suitable AI backend (PyTorch / NCNN, CUDA / MPS / CPU)
+- download and prepare AI models for aienhance (Real-ESRGAN / RealCUGAN, optional face restoration models)
+- optionally install CodeFormer (face restoration, non-commercial S-Lab License 1.0)
+- write a user config (config.ini) under your platform’s config directory
+- create a video launcher in ~/.local/bin pointing to the installed toolkit
 
-install required Python packages
+> The installer is designed to be robust on unstable connections
+> (resumable downloads, many retries, fallbacks, offline caches).
 
-check/install ffmpeg & ffprobe (if possible)
+### 4. Basic Usage
 
-download/prepare AI models for aienhance
-
-create a convenient launcher (e.g. video)
-
-3.3 Manual setup (generic)
-If you prefer a manual setup:
-
-
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-
-# optionally create a convenience alias
-echo 'alias video="python -m photonfabric"' >> ~/.bashrc
-Adjust module/entry-point names to your actual package layout.
-
-4. Basic Usage
 All commands share the same pattern:
 
+```bash
 video <COMMAND> [FILES] [OPTIONS]
-Interactive mode:
-Call without FILES → a guided wizard starts.
+```
 
-CLI / batch mode:
-Provide one or more files and the relevant flags.
+**Interactive mode:**
+Call without FILES and OPTIONS:
 
-Examples:
+- a guided wizard starts
+- you are guided through format, codec, preset, resolution, etc.
+- safe defaults, warnings and hints are shown
 
+**CLI / batch mode:**
+Provide one or more files and the relevant flags:
 
+- ideal for scripts, cron jobs, large batch processing
+- stable flag semantics as shown in video \<COMMAND> --help/-h
+
+**Examples:**
+
+```bash
 # Interactive conversion wizard
 video convert
 
@@ -119,137 +124,135 @@ video convert input.mkv --format mp4 --codec h264 --preset web
 
 # Batch pattern: file%.mkv → file001.mkv, file6.mkv, file030.mkv, …
 video compress season1_ep%.mkv --quality 40
-5. Global Behaviour & Concepts
-5.1 Interactive vs. CLI mode
-No files given → interactive mode:
+```
 
-step-by-step questions (format, codec, preset, resolution, etc.)
+### 5. Global Behaviour & Concepts
 
-safe defaults, warnings & hints
+## 5.1 Streams, metadata & thumbnails
 
-Files + flags given → non-interactive CLI:
-
-suitable for scripts, cron jobs, batch processing
-
-stable flag semantics as documented in the infofiles
-
-5.2 Streams, metadata & thumbnails
 Across commands, PhotonFabric tries to:
 
-preserve video/audio/subtitle streams whenever no re-encode is needed (-c copy where possible)
+- preserve video, audio and subtitle streams where no re-encode is needed (-c copy when possible)
+- preserve or re-embed cover / thumbnail images
+- keep or reconstruct metadata and chapters, depending on container/codec support
+- use a plan-based stream mapping API to:
+  - detect stream types and codecs
+  - map them according to container constraints
+  - apply fallback strategies (e.g. subtitle re-muxing for MP4/MOV)
 
-preserve or re-embed cover/thumbnail images
+## 5.2 Alpha & pixel format
 
-maintain metadata and chapters, mapping or re-creating them depending on target container/codec
-
-use the Plan-API to perform container-aware stream mapping
-
-5.3 Alpha & pixel format
 The toolkit is alpha-aware:
 
-detects alpha channels in sources
+- detects alpha channels in source material
+- warns if the chosen container+codec cannot store alpha
+  (e.g. MP4 + h264, many hardware-accelerated pipelines)
+- suggests alpha-capable alternatives, such as:
+  - `MKV + FFV1`, `MKV + ProRes 4444`, `MKV + PNG`, `MKV + QTRLE`
+  - WebM/Matroska with AV1/VP9 alpha
+  - `AVI/MKV + UtVideo`, `Magicyuv`, `rawvideo`, …
 
-warns if the chosen container+codec cannot carry alpha (e.g. MP4 + h264)
+Pixel formats are treated as follows:
 
-suggests suitable alpha-capable combinations (e.g. MKV+FFV1, MOV+ProRes 4444, MKV/WebM+VP9/AV1 alpha, MKV/AVI+UtVideo/PNG/QTRLE/RGBA)
+- mappings per codec & container
+- alignment and subsampling constraints (even width/height where required)
+- automatic correction of odd dimensions while preserving visible content
+- HDR-related flags (color primaries, transfer characteristics, matrix) are preserved where possible
 
-keeps track of pixel formats and corrects encoder alignment constraints (even widths/heights etc.) where necessary
+## 5.3 Placeholders & batch patterns
 
-5.4 Placeholders & batch patterns
-For all commands, the percent sign % is a numbering placeholder:
+All commands share the same placeholder semantics:
 
-file%.mkv → file001.mkv, file6.mkv, file030.mkv, …
+- `%` in the filename stands for a numeric index
+- `file%.mkv` will match or generate:
+  - `file001.mkv`, `file6.mkv`, `file030.mkv`, …
 
-This is used consistently across modules (convert, compress, trim, metadata, extract, …).
+This is used consistently across the toolkit:
 
-5.5 Return codes
-0 → success
+- `convert`, `compress`, `trim`, `scale`, `croppad`, `merge`, `interpolate`, `img2vid`, `extract`, `metadata`, …
 
-non-zero → ffmpeg/environment error (e.g. invalid flags, missing codecs, failed writes)
+## 5.4 Return codes
 
-This makes PhotonFabric easy to integrate into shell scripts and CI pipelines.
+- `0` → success
+- non-zero → ffmpeg / environment error, typical cases:
+  - invalid or unsupported flags
+  - missing codecs / encoders
+  - failed I/O or permission errors
+  - model / backend not available
 
-6. Command Overview
-Command Purpose
-convert General container/codec conversion with presets, resolution & FPS control
-compress Simple compression by “quality %” mapped to CRF
-trim Fast (lossless/GOP-based) or precise (re-encode) cutting
-scale Resolution scaling with aspect-ratio control
-croppad Axis-wise crop/pad to target resolution
-merge Concatenate clips, add audio/subtitle tracks, manage offsets & gaps
-interpolate Raise or normalize FPS via motion interpolation
-img2vid Create videos from still image sequences
-extract Extract audio, subtitles, frames, video streams and thumbnails
-enhance Classic ffmpeg filter enhancement (stabilize, denoise, color, levels, etc.)
-aienhance AI upscaling/enhancement using Real-ESRGAN/RealCUGAN (+ optional TTA/blending)
-gif Animated GIF & meme creation with text overlays
-metadata Read/edit tags, list tag schema, JSON export, thumbnail control
-￼
-Below is a more detailed look at each command.
-For full flag lists, see the corresponding infofiles/PhotonFabric.<command>.en.info files.
+This makes PhotonFabric easy to integrate into shell scripts, batch jobs and CI pipelines.
 
-7. Commands in Detail
-7.1 convert – general container/codec conversion
-Infofile: infofiles/PhotonFabric.convert.en.info
+### 6. Commands in Detail
 
-Converts video files using ffmpeg. Supports both interactive and CLI mode:
+## 7.1 convert – general container/codec conversion
 
-choose target container (mp4, mkv, avi, mov, webm, mpeg)
+Infofile: `video convert --help/-h`
 
-choose video codec (h264, hevc, av1, vp9, vp8, mpeg4, prores, dnxhd, jpeg2000, mjpeg, ffv1, huffyuv, utvideo, theora, qtrle, hap, rawvideo, png, magicyuv, cineform, mpeg1video, mpeg2video, …)
+Converts video files using `ffmpeg`. Supports both interactive and CLI mode:
 
-presets (messenger360p, messenger720p, web, casual, cinema, studio, ultra, lossless)
+- choose target container: `mp4`, `mkv`, `avi`, `mov`, `webm`, `mpeg`
+- choose video codec:
+  `h264`, `hevc`, `av1`, `vp9`, `vp8`, `mpeg4`, `prores`, `dnxhd`,
+  `jpeg2000`, `mjpeg`, `ffv1`, `huffyuv`, `utvideo`,
+  `theora`, `qtrle`, `hap`, `rawvideo`, `png`, `magicyuv`,
+  `cineform`, `mpeg1video`, `mpeg2video`
+- presets: `messenger360p`, `messenger720p`, `web`, `casual`, `cinema`, `studio`, `ultra`, `lossless`
+- optional resolution & framerate changes
+- preserves or re-embeds thumbnails, metadata and compatible streams
 
-optional resolution & framerate changes
+**Example:**
 
-preserves or re-embeds thumbnails, metadata and compatible streams
-
-Example:
-
+```bash
 # Web-friendly MP4, AV1 codec, “web” preset
 video convert movie.mkv --format mp4 --codec av1 --preset web
+```
 
-7.2 compress – filesize reduction by percentage
-Infofile: infofiles/PhotonFabric.compress.en.info
+---
+
+## 7.2 compress – filesize reduction by percentage
+
+Infofile: `video compress --help/-h`
 
 Compresses videos via a simple visual quality percentage:
 
---quality (0–100) maps internally to ffmpeg’s CRF
+- `--quality` (0–100) maps internally to CRF
+- higher values → better quality, larger files
+- lower values → stronger compression, smaller files
+- container/codec are chosen to stay close to the original (or a robust default)
+- thumbnails, metadata and stream layout are preserved whenever possible
 
-higher values → better quality, larger files
+**Example:**
 
-lower values → stronger compression, smaller files
-
-container/codec are chosen to stay as close as possible to the original (or a general default), including cover preservation
-
-Example:
-
-# Compress series to about 40% quality; good balance for many videos
+```bash
+# Compress a season to about 40% visual quality
 video compress season1_ep%.mkv --quality 40
+```
 
-7.3 trim – cutting & segment extraction
-Infofile: infofiles/PhotonFabric.trim.en.info
+---
+
+## 7.3 trim – cutting & segment extraction
+
+Infofile: `video trim --help/-h`
 
 Two modes:
 
-Fast (lossless/GOP-based):
+- Fast (lossless / GOP-based)
+  - copies video/audio/subtitles
+  - cuts only on keyframes → not perfectly frame-accurate
 
-copies video/audio/subtitles (-c copy)
+- Precise (re-encode)
+  - frame-accurate
+  - uses the same quality presets as `convert` (`messenger360p` … `lossless`)
 
-cuts on keyframes → not perfectly frame-accurate
+Supported time formats:
 
-Precise (re-encode):
+- SS(.fff), MM:SS, HH:MM:SS(.fff)
+- percentages: 10%, 10p
+- negative offsets: -1:20 (relative from end)
 
-frame-accurate
+**Examples:**
 
-uses quality presets (messenger360p, …, lossless)
-
-Time formats: SS(.fff), MM:SS, HH:MM:SS(.fff), percentages (10% / 10p), negative offsets (-1:20 = back from end).
-
-Examples:
-
-bash
-￼Code kopieren
+```bash
 # Simple lossless trim: 30s to 50s
 video trim film.mp4 --start 0:30 --duration 20
 
@@ -258,23 +261,30 @@ video trim input.mkv --start 01:00:00 --end 01:05:30 --precise --quality cinema
 
 # Batch trim using patterns
 video trim clip%.mp4 --start 10 --duration 30%
-Thumbnails and metadata are preserved and re-embedded.
+```
 
-7.4 scale – resolution scaling
-Infofile: infofiles/PhotonFabric.scale.en.info
+Thumbnails and metadata are preserved and re-embedded where possible.
+
+---
+
+## 7.4 scale – resolution scaling
+
+Infofile: `video scale --help/-h`
 
 Scales videos to preset or custom resolutions:
 
-presets like 240p, 360p, 480p, 720p, 1080p, 1440p, QHD+, 4K, 4K-DCI, 8K, 8K-DCI
+- presets: `240p`, `360p`, `480p`, `720p`, `1080p`, `1440p`, `QHD+`, `4K`, `4K-DCI`, `8K`, `8K-DCI`
+- `original` keeps source resolution but fixes odd dimensions for encoder alignment
+- custom resolution with flexible separators: `W:H`, `W×H`, `W H`, …
 
-original keeps original resolution but fixes odd dimensions (encoder alignment)
+Aspect ratio:
 
-custom with flexible separators (W:H, W×H, W H, …)
+- `--preserve-ar true` (default): bounding-box behavior
+- `--preserve-ar false`: stretch to exactly the target
 
---preserve-ar controls aspect ratio (default: true → bounding box behaviour)
+**Examples:**
 
-Examples:
-
+```bash
 # Scale to 1080p, preserving AR
 video scale clip.mp4 --resolution 1080p
 
@@ -283,317 +293,290 @@ video scale film%.mkv --resolution 720p
 
 # Custom target without AR preservation
 video scale sample.mov --resolution 320x240 --preserve-ar false
-Streams are re-mapped sensibly; thumbnails are preserved.
+```
 
-7.5 croppad – axis-wise crop/pad to target resolution
-Infofile: infofiles/PhotonFabric.croppad.en.info
+---
 
-Crop or pad per axis:
+## 7.5 croppad – axis-wise crop/pad
 
-choose target --resolution (same preset/custom scheme as scale)
+Infofile: `video croppad --help/-h`
 
-use --offset / --offset-x / --offset-y to control crop origin
+Crop or pad independently per axis:
 
-for sources with alpha, transparent padding is used
+- choose target `--resolution` (same presets/custom syntax as `scale`)
+- use `--offset` / `--offset-x` / `--offset-y` to control the crop origin
+- for sources with alpha, transparent padding is used
+- `original` may be used when you only want to touch metadata/thumbnail
 
-original can be used to only touch metadata/thumbnail (no actual crop/pad)
+**Examples:**
 
-Example:
-
+```bash
 # Center-crop/pad to 1920x1080
 video croppad input.mkv --resolution 1920x1080
 
 # Crop starting from a specific offset
 video croppad input.mkv --resolution 1920x800 --offset 0:100
+```
 
-7.6 merge – concatenate & add streams
-Infofile: infofiles/PhotonFabric.merge.en.info
+---
+
+## 7.6 merge – concatenate & add streams
+
+Infofile: `video merge --help/-h`
 
 Combines:
 
-multiple video clips (concat)
-
-additional audio tracks
-
-additional subtitle files
+- multiple video clips
+- optional additional audio/subtitle files
 
 Key options:
 
---target-res strategy (match-first, no-scale, smallest, average, largest, fixed:WxH)
-
---offset, --pause between clips
-
---audio-offset, --subtitle-offset
-
---extend to length of longest extra track
-
---audio-name, --subtitle-name for unified track titles
-
-standard --format, --codec, --preset, --output
+- `--target-res` strategy:
+  `match-first`, `no-scale`, `smallest`, `average`, `largest`, `fixed:WxH`
+- `--offset`, `--pause` between clips
+- `--audio-offset`, `--subtitle-offset`
+- `--extend` to length of the longest external track
+- standard `--format`, `--codec`, `--preset`, `--output`
 
 Streams & metadata:
 
-main video streams, metadata, chapters, thumbnails are mapped where possible
+- main video streams, metadata, chapters and thumbnails are preserved where possible
+- additional subtitles converted as needed (e.g. to `mov_text` for MP4/MOV)
+- language/title heuristics from filenames and ISO-639-2 codes
 
-additional subtitles converted to mov_text for MP4/MOV; in MKV/MOV/AVI usually copied
+**Examples:**
 
-automatic language/title heuristics from filenames/tags (ISO-639-2)
-
-Examples:
-
+```bash
 # Seamless join with small pause
-video merge a.mp4 b.mp4 --target-res match-first --pause 1.0s --format mkv --codec h264 --preset casual
+video merge a.mp4 b.mp4 \
+  --target-res match-first \
+  --pause 1.0s \
+  --format mkv --codec h264 --preset casual
 
 # Concatenate MOVs without scaling, using ProRes
-video merge part1.mov part2.mov part3.mov -tr no-scale -f mov -c prores -pr studio
+video merge part1.mov part2.mov part3.mov \
+  --target-res no-scale \
+  --format mov --codec prores --preset studio
 
 # Video + audio + subtitles with offsets
-video merge movie.mkv dub_de.aac subs_en.srt --audio-offset 1.5s --subtitle-offset 2s --format mkv
+video merge movie.mkv dub_de.aac subs_en.srt \
+  --audio-offset 1.5s --subtitle-offset 2s \
+  --format mkv
+```
 
-# Extend to longest external audio commentary
-video merge base.mp4 commentary.wav --extend -f mp4 -c h264 -pr casual
+---
 
-7.7 interpolate – frame-rate upsampling
-Infofile: infofiles/PhotonFabric.interpolate.en.info
+## 7.7 interpolate – frame-rate upsampling
+
+Infofile: `video interpolate --help/-h`
 
 Raises or normalizes FPS using ffmpeg’s minterpolate:
 
---factor accepts:
+- `--factor` accepts:
+  - multiplicative factors: `2x`, `1.5x`, …
+  - absolute FPS: `60`, `59.94`, `30000/1001`, …
 
-multiplicative: 2x, 1.5x, …
+- `--quality:`
+  - `std` – balanced
+  - `hq` – mild pre-denoise
+  - `max` – stronger pre-denoise + sharpening
 
-absolute FPS: 60, 59.94, 30000/1001, …
+**Examples:**
 
---quality profile:
-
-std – balanced
-
-hq – mild pre-denoise for more stable motion vectors
-
-max – stronger pre-denoise + sharpening
-
-Example:
-
+```bash
 # 25 → 50 FPS
 video interpolate film.mkv --factor 2x
 
-# Normalize to ~59.94 FPS using rational FPS
+# Normalize to ~59.94 FPS using rational notation
 video interpolate clip.mp4 --factor 60000/1001 --quality hq
-Streams and metadata are carried along where supported.
+```
 
-7.8 img2vid – image sequence → video
-Infofile: infofiles/PhotonFabric.img2vid.en.info
+---
+
+## 7.8 img2vid – image sequence → video
+
+Infofile: `video img2vid --help/-h`
 
 Creates videos from:
 
-numbered image sequences (frame_0001.png, frame_0002.png, …)
-
-folders containing images
+- numbered image sequences (`frame_0001.png`, `frame_0002.png`, …)
+- folders containing images
 
 Options:
 
-presets: messenger360p, messenger720p, web, casual, cinema, studio, ultra, lossless
+- presets: `messenger360p`, `messenger720p`, `web`, `casual`, `cinema`, `studio`, `ultra`, `lossless`
+- `--format`, `--codec` (reusing convert’s logic)
+- `--framerate` or `--duration` for total video length
+- optional `--scale`
 
---format, --codec (similar policy to convert)
+**Example:**
 
---framerate or --duration for total video length
-
-optional --scale
-
-thumbnails & metadata are created/preserved where the container/codec allow it
-
-Example:
-
+```bash
 # Simple slideshow, web preset
-video img2vid frames/frame_%.png --preset web --framerate 30 --format mp4
+video img2vid frames/frame_%.png \
+  --preset web --framerate 30 --format mp4
+```
 
-7.9 extract – audio / subtitle / frame / video extraction
-Infofile: infofiles/PhotonFabric.extract.en.info
+---
+
+## 7.9 extract – audio / subtitle / frame / video extraction
+
+Infofile: `video extract --help/-h`
 
 Selective extraction:
 
---audio → extract all audio tracks as MP3 (-q:a 0), uniquely named (with index/language)
+- `--audio` → extract all audio tracks (e.g. as MP3 or original codec)
+- `--subtitle` / `--format` → extract subtitles (with optional language filters)
+- `--frame` / `--format` → extract a single still image at:
+  - seconds: `10`, `10s`
+  - `MM:SS`, `HH:MM:SS(.ms)`
+  - percentage: `50%`
+  - special positions: `middle`, `mid`, `center`
+- `--video` → raw video streams / package formats
 
---subtitle → extract subtitles, optional filters by language etc.
+**Examples:**
 
---frame → extract a single still image (frame) at:
-
-seconds: 10, 10s
-
-MM:SS, HH:MM:SS(.ms)
-
-percentage: 50%
-
-special positions: middle, mid, center, centre
-
---video / --format for raw video streams / formats
-
-defaults are safe; negative times are not allowed; times are clamped to duration if necessary
-
-Examples:
-
+```bash
 # Single representative frame at 50%
 video extract movie.mkv --frame 50%
 
-# All audio tracks as MP3
+# All audio tracks
 video extract concert.mkv --audio
 
 # All audio + English subtitles from multiple files
 video extract film%.mkv --audio --subtitle en
+```
 
-7.10 enhance – classic filter enhancement
-Infofile: infofiles/PhotonFabric.enhance.en.info
+---
 
-Filter-based enhancement with ffmpeg:
+## 7.10 enhance – classic filter enhancement
 
-Presets combine stabilization, denoise and color tweaks:
+Infofile: `video enhance --help/-h`
 
-soft, realistic, max, color_levels, cinematic, hist_eq, …
+Filter-based enhancement using ffmpeg:
 
-Individual controls:
+- presets combine stabilization, denoise and color tweaks:
+  - `soft`, `realistic`, `max`, `color_levels`, `cinematic`, `hist_eq`, `vibrance`, `stabilize_only`, `denoise_only`
 
-stabilization toggles & strength (--stabilize, --stab-method, …)
+- individual controls:
+  - stabilization toggles & strength (`--stabilize`, `--stab-method`, …)
+  - denoise filters
+  - brightness/contrast/saturation percentages
 
-denoise filters
+**Example:**
 
-brightness/contrast/saturation percentages
-
-Audio is passed through or re-encoded appropriately; thumbnails are preserved.
-
-Example:
-
+```bash
 # Light “realistic” enhancement
 video enhance vacation.mp4 --preset realistic
 
 # Custom color tweak
 video enhance clip.mkv --brightness 10 --contrast 5 --saturation 15
+```
 
-7.11 aienhance / ai-enhance – AI upscaling & enhancement
-Infofile: infofiles/PhotonFabric.aienhance.en.info
-The command usually accepts both aienhance and ai-enhance spelling.
+---
 
-AI-based scaling / enhancement using models such as Real-ESRGAN and RealCUGAN:
+## 7.11 aienhance / ai-enhance – AI upscaling & enhancement
 
---aimodel:
+Infofile: `video aienhance --help/-h`
 
-e.g. realesr-general-x4v3 (general-purpose 4×)
+AI-based scaling / enhancement using Real-ESRGAN and RealCUGAN:
 
-realesr-animevideov3, RealCUGAN variants, etc.
+- `--aimodel`:
+  - `realesr-general-x4v3` (general-purpose 4×)
+  - `RealESRGAN_x4plus`, `RealESRGAN_x2plus`
+  - `RealESRGAN_x4plus_anime_6B`
+  - RealCUGAN variants (via NCNN backend)
+- `--scale`:
+  - factor (e.g. `2.0`, `4.0`) – allowed range depends on model
+- denoise / noise level flags (model-dependent)
+- optional TTA (`--tta`) for better quality (slower)
+- blending:
+  - `--blend`, `--blend-opacity` to mix original and AI output
+- VRAM-aware chunking, tile strategies and retry mechanisms
 
---scale:
+The command remuxes streams, metadata, chapters and thumbnails back into the final container whenever possible.
 
-factor (e.g. 2.0, 4.0) – often flexible between 1.0 and 4.0 depending on model
+**Example:**
 
-Denoise / noise level flags (model-dependent)
-
-Optional TTA (--tta) for better quality (slower)
-
-Blending:
-
---blend + --blend-opacity to mix original and AI result
-
-Chunked processing, priorities, etc., to manage VRAM and runtime
-
-Streams, metadata, chapters and thumbnails are preserved and remuxed back as far as possible.
-
-Example:
-
+```bash
 # 1080p → ~4K using a general AI model
-video aienhance ep%.mkv --aimodel realesr-general-x4v3 --scale 2 --priority medium
+video aienhance ep%.mkv \
+  --aimodel realesr-general-x4v3 \
+  --scale 2 \
+  --priority medium
+```
 
-7.12 gif – GIF & meme creation
-Infofile: infofiles/PhotonFabric.gif.en.info
+---
+
+## 7.12 gif – GIF & meme creation
+
+Infofile: `video gif --help/-h`
 
 Creates animated GIFs from:
 
-video clips
-
-existing GIFs
+- video clips
+- existing GIFs
 
 Key features:
 
-meme text:
+- meme text:
+  - `--text-top`, `--text-bottom`
 
---text-top, --text-bottom
+- font size:
+  - presets: `thiny`, `small`, `medium`, `grande`, `large`, `huge`
+  - or explicit pixel sizes (min 8 px)
+  - separate flags like `--font-size-top`, `--font-size-bottom` (if enabled)
+- quality control:
+  - optional high-quality pipeline (less aggressive palette reduction)
+- `--no-auto-open` to suppress automatic viewer launch
 
-font size:
+**Example:**
 
-labels: thiny, small, medium, grande, large, huge
-
-or explicit pixel sizes (min 8px)
-
-separate --font-size-top / --font-size-bottom flags (if available)
-
-keep quality: optional high-quality pipeline instead of aggressive GIF palette optimization
-
---no-auto-open to suppress automatic viewer launch
-
-Example:
-
+```bash
 video gif clip.mp4 \
   --text-top "WHEN CODE WORKS" \
   --text-bottom "AND YOU DON’T KNOW WHY" \
   --font-size medium
+```
 
-7.13 metadata – inspect & edit metadata
-Infofile: infofiles/PhotonFabric.metadata.en.info
+---
 
-Reads and writes container/stream metadata, with strong introspection and safety:
+## 7.13 metadata – inspect & edit metadata
 
---list-tags:
+Infofile: `video metadata --help/-h`
 
-formatted overview (file info, video block, color info, alpha, audio summary, chapter count, grouped tags)
+Reads and writes container/stream metadata with a strong safety layer:
 
---list-tags-json:
-
-structured JSON of the same data
-
---list-tagnames:
-
-full schema of known metadata keys:
-
-editable, protected, and virtual read-only fields
-
-Generic --tag interface:
-
---tag title → print title
-
---tag title="My Movie" → set title
-
-multiple --tag options allowed
-
-Tag-specific auto-flags for every editable key:
-
---title, --artist, --genre, --production_year, …
-
---set-tag-KEY, --delete-tag-KEY, --list-tag-KEY
-
+- `--list-tags`:
+  - formatted overview (technical info + grouped tags)
+- `--list-tags-json`:
+  - structured JSON for scripts
+- `--list-tagnames`:
+  - full schema of known metadata keys:
+    - editable, protected, virtual read-only
+Generic tag interface:
+- `--tag title` → print title
+- `--tag title="My Movie"` → set title
+- multiple `--tag` options allowed
+Tag-specific convenience flags:
+- `--title`, `--artist`, `--genre`, `--production_year`, …
+- `--set-tag-KEY`, `--delete-tag-KEY`, `--list-tag-KEY`
 Thumbnail control:
-
---set-thumbnail IMAGE
-
---delete-thumbnail
-
---show-thumbnail
-
+- `--set-thumbnail IMAGE`
+- `--delete-thumbnail`
+- `--show-thumbnail`
 Interactive mode:
+- shows technical video info (resolution, FPS, pixfmt, color primaries, alpha, streams, chapters)
+- groups metadata into protected / editable / other
+- allows interactive edit/delete of editable tags
+- supports interactive thumbnail set/remove (if container supports it)
+Writes are performed in-place via a dedicated `metadata_support` layer, with:
+- AVI quirks handled (optionally via exiftool)
+- post-write verification of the requested tag changes
 
-shows technical video info (resolution, FPS, pixel format, color primaries, alpha, streams, chapters)
+**Examples:**
 
-groups metadata into protected, editable, other
-
-allows interactive edit/delete of editable tags
-
-supports interactive thumbnail set/remove (if supported)
-
-Writes are done in-place via an internal metadata_support layer, with:
-
-AVI quirks handled (optionally via exiftool)
-
-post-write verification of requested tag changes
-
-Examples:
-
+```bash
 # Interactive view
 video metadata film.mkv
 
@@ -611,30 +594,12 @@ video metadata ep%.mkv --title "My Series" --production_year 2024
 
 # Delete tags
 video metadata film.mkv --delete-tag-comment --delete-tag-keywords
+```
 
-# Full JSON export including streams & chapters
-video metadata film.mkv --list-tags-json --all > meta_film.json
-8. Further Documentation
-Each command has a dedicated infofile under infofiles/:
+---
 
-infofiles/
-  PhotonFabric.en.info                 # Global overview (EN)
-  PhotonFabric.convert.en.info         # convert
-  PhotonFabric.compress.en.info        # compress
-  PhotonFabric.trim.en.info            # trim
-  PhotonFabric.scale.en.info           # scale
-  PhotonFabric.croppad.en.info         # croppad
-  PhotonFabric.merge.en.info           # merge
-  PhotonFabric.interpolate.en.info     # interpolate
-  PhotonFabric.img2vid.en.info         # img2vid
-  PhotonFabric.extract.en.info         # extract
-  PhotonFabric.enhance.en.info         # enhance
-  PhotonFabric.aienhance.en.info       # aienhance / ai-enhance
-  PhotonFabric.gif.en.info             # gif
-  PhotonFabric.metadata.en.info        # metadata
-These infofiles serve as the single source of truth for all flags and behaviour. The README gives a high-level overview; always refer to the infofiles for full details and the most current options.
+## 8. Contributing
 
-9. Contributing
 Contributions, bug reports and ideas are welcome!
 
 report issues with:
@@ -651,12 +616,14 @@ help with documentation and translations
 
 Please check the existing issues and infofiles before opening a new ticket to keep the discussion focused.
 
-10. License
+## 9. License
+
 PhotonFabric – VideoKit is licensed under the [MIT License](./LICENSE).
 
 Some optional components and dependencies are downloaded from their original
 repositories and remain under their respective licenses, including but not
 limited to:
+
 - Real-ESRGAN (BSD 3-Clause)
 - BasicSR, GFPGAN (Apache-2.0)
 - facexlib (MIT)
