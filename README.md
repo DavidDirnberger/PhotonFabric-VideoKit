@@ -184,7 +184,7 @@ This makes PhotonFabric easy to integrate into shell scripts, batch jobs and CI 
 
 ### 6. Commands in Detail
 
-## 7.1 convert – general container/codec conversion
+## 6.1 convert – general container/codec conversion
 
 Infofile: `video convert --help/-h`
 
@@ -209,7 +209,7 @@ video convert movie.mkv --format mp4 --codec av1 --preset web
 
 ---
 
-## 7.2 compress – filesize reduction by percentage
+## 6.2 compress – filesize reduction by percentage
 
 Infofile: `video compress --help/-h`
 
@@ -230,7 +230,7 @@ video compress season1_ep%.mkv --quality 40
 
 ---
 
-## 7.3 trim – cutting & segment extraction
+## 6.3 trim – cutting & segment extraction
 
 Infofile: `video trim --help/-h`
 
@@ -267,7 +267,7 @@ Thumbnails and metadata are preserved and re-embedded where possible.
 
 ---
 
-## 7.4 scale – resolution scaling
+## 6.4 scale – resolution scaling
 
 Infofile: `video scale --help/-h`
 
@@ -297,7 +297,7 @@ video scale sample.mov --resolution 320x240 --preserve-ar false
 
 ---
 
-## 7.5 croppad – axis-wise crop/pad
+## 6.5 croppad – axis-wise crop/pad
 
 Infofile: `video croppad --help/-h`
 
@@ -320,7 +320,7 @@ video croppad input.mkv --resolution 1920x800 --offset 0:100
 
 ---
 
-## 7.6 merge – concatenate & add streams
+## 6.6 merge – concatenate & add streams
 
 Infofile: `video merge --help/-h`
 
@@ -366,7 +366,7 @@ video merge movie.mkv dub_de.aac subs_en.srt \
 
 ---
 
-## 7.7 interpolate – frame-rate upsampling
+## 6.7 interpolate – frame-rate upsampling
 
 Infofile: `video interpolate --help/-h`
 
@@ -393,7 +393,7 @@ video interpolate clip.mp4 --factor 60000/1001 --quality hq
 
 ---
 
-## 7.8 img2vid – image sequence → video
+## 6.8 img2vid – image sequence → video
 
 Infofile: `video img2vid --help/-h`
 
@@ -419,7 +419,7 @@ video img2vid frames/frame_%.png \
 
 ---
 
-## 7.9 extract – audio / subtitle / frame / video extraction
+## 6.9 extract – audio / subtitle / frame / video extraction
 
 Infofile: `video extract --help/-h`
 
@@ -449,7 +449,7 @@ video extract film%.mkv --audio --subtitle en
 
 ---
 
-## 7.10 enhance – classic filter enhancement
+## 6.10 enhance – classic filter enhancement
 
 Infofile: `video enhance --help/-h`
 
@@ -475,7 +475,7 @@ video enhance clip.mkv --brightness 10 --contrast 5 --saturation 15
 
 ---
 
-## 7.11 aienhance / ai-enhance – AI upscaling & enhancement
+## 6.11 aienhance / ai-enhance – AI upscaling & enhancement
 
 Infofile: `video aienhance --help/-h`
 
@@ -508,7 +508,7 @@ video aienhance ep%.mkv \
 
 ---
 
-## 7.12 gif – GIF & meme creation
+## 6.12 gif – GIF & meme creation
 
 Infofile: `video gif --help/-h`
 
@@ -541,7 +541,7 @@ video gif clip.mp4 \
 
 ---
 
-## 7.13 metadata – inspect & edit metadata
+## 6.13 metadata – inspect & edit metadata
 
 Infofile: `video metadata --help/-h`
 
@@ -598,7 +598,7 @@ video metadata film.mkv --delete-tag-comment --delete-tag-keywords
 
 ---
 
-## 8. Contributing
+## 7. Contributing
 
 Contributions, bug reports and ideas are welcome!
 
@@ -616,7 +616,7 @@ help with documentation and translations
 
 Please check the existing issues and infofiles before opening a new ticket to keep the discussion focused.
 
-## 9. License
+## 8. License
 
 PhotonFabric – VideoKit is licensed under the [MIT License](./LICENSE).
 
