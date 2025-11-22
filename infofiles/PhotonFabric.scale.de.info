@@ -1,0 +1,71 @@
+###PhotonFabric VideoKit – scale (DE)
+
+##Kurzbeschreibung
+##----------------
+Skaliert Videos auf eine Zielauflösung. Unterstützt interaktiven Modus (ohne Dateiangabe) und Batch-Modus (mit Dateiangabe und optionalen Flags). Standardmäßig wird das Seitenverhältnis beibehalten. Bei Wahl von original wird – falls nötig – eine Gerade-Ausrichtung (Encoder-Alignment, z. B. durch 2/8/16 teilbare Breite/Höhe) automatisch korrigiert. Cover/Thumbnail der Quelle wird erhalten und nach dem Skalieren wieder eingebettet.
+
+##Aufruf
+##------
+video scale [DATEIEN] [--resolution RES] [--preserve-ar BOOL] [--output PFAD]
+
+##Optionen & Flags
+##----------------
+
+#--resolution, -r: # <string> (default=original)
+                  Zielauflösung. custom fordert Eingabe W:H (gerade Werte, ≤ Quelle). Bei beibehaltenem Seitenverhältnis dient W:H als „Max-Box“ (Bounding-Box).
+                  §original§ Original-Auflösung beibehalten; korrigiert nur ungerade Maße (Encoder-Alignment).
+                  §240p§ 426:240 (16:9)
+                  §360p§ 640:360 (16:9)
+                  §480p§ 854:480 (16:9)
+                  §720p§ 1280:720 (16:9)
+                  §1080p§ 1920:1080 (16:9)
+                  §1440p§ 2560:1440 (16:9)
+                  §QHD+§ 3200:1800 (~16:9)
+                  §4K§ 3840:2160 (16:9)
+                  §4K-DCI§ 4096:2160 (17:9)
+                  §8K§ 7680:4320 (16:9)
+                  §8K-DCI§ 8192:4320 (17:9)
+                  §custom§ Benutzerdefiniert (Breite:Höhe), gerade Zahlen erforderlich, als trennzeichen kann ':', ',', '/', 'x', 'X', ';', '-' und Leerzeichen verwendet werden.
+
+#--preserve-ar, -ar: # <bool> (default=true)
+                   Seitenverhältnis beibehalten oder beliebige skalierung.
+                   §true§ Beibehaltung des Seitenverhältnisses (empfohlen). Bei custom wird W:H als Max-Box interpretiert.
+                   §false§ Ignoriert das Seitenverhältnis, skaliert exakt auf W:H (mögliche „Streckung“).
+
+#--output, -o: # <string> (default=leer)
+              Ausgabepfad/Datei. Ohne Angabe: gleicher Dateiname, Suffix _scaled bzw. _scaled_WxH; Container/Codec bleiben passend zur Quelle bzw. zum Zielcontainer erhalten.
+
+##Hinweise
+##--------
+Interaktiver Modus
+Schrittweise Auswahl: Auflösung (inkl. custom) → ggf. Seitenverhältnis beibehalten (Ja/Nein).
+
+Encoder-Alignment
+Viele Encoder verlangen gerade Breite/Höhe (teilbar durch 2/8/16). original korrigiert dies automatisch, ohne sichtbar zu skalieren. Bei expliziter Zielauflösung wird die gewünschte Größe ggf. minimal auf Encoder-kompatible Werte gerundet.
+
+Seitenverhältnis
+Mit --preserve-ar true (Standard) dient eine angegebene Zielauflösung als Obergrenze (Bounding-Box). Mit false wird exakt auf W:H skaliert (eventuelle Verzerrung möglich).
+
+Streams & Metadaten
+Video wird neu encodiert; Audio/Untertitel werden über die Plan-API sinnvoll gemappt. Vorhandenes Cover/Thumbnail wird extrahiert und nach erfolgreichem Skalieren wieder eingebettet.
+
+GPU/Hardware
+Bevorzugt verfügbare HW-Encoder (z. B. NVENC/VAAPI/QSV); fällt andernfalls auf Software zurück.
+
+Rückgabewerte
+0 Erfolg; ≠0 Fehler von ffmpeg/Umgebung.
+
+Platzhalter
+Das %-Zeichen steht als Platzhalter für Nummerierung: file%.mkv ⇒ file001.mkv, file6.mkv, file030.mkv, …
+
+##Beispiele
+##---------
+video scale clip.mp4 --resolution 1080p
+
+video scale film%.mkv --resolution 720p
+
+video scale input.webm --resolution 1800x900
+
+video scale sample.mov --resolution 320x240 --preserve-ar false
+
+video scale raw.mov --resolution original

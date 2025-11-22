@@ -1,0 +1,125 @@
+###PhotonFabric VideoKit – Übersicht (DE)
+
+##Kurzbeschreibung
+##----------------
+PhotonFabric – VideoKit ist ein modularer Werkzeugkasten rund um ffmpeg (und optionale KI-Modelle), der typische Video-Workflows in einzelne Kommandos aufteilt: Konvertieren, Komprimieren, Schneiden, Skalieren, Zuschneiden/Auffüllen, Interpolieren, Bildfolgen zu Videos, Mergen, Extrahieren, klassische Filter-Verbesserung, KI-Upscaling, GIF-Erzeugung und Metadatenbearbeitung. Alle Kommandos unterstützen einen interaktiven Modus (ohne Dateiangabe) und einen CLI-/Batch-Modus (mit Dateiangabe und optionalen Flags). Wo möglich werden Container-Eigenschaften, Streams (Audio, Untertitel), Kapitel, Metadaten und Thumbnails erhalten oder sinnvoll neu gesetzt. Alpha-Kanäle werden – sofern der gewählte Codec/Container das unterstützt – mitübernommen.
+
+##Aufruf
+##------
+video <KOMMANDO> [DATEIEN] [OPTIONEN]
+
+Ohne Angabe von Dateien startet ein Kommando eine geführte, interaktive Abfrage (Menüs, Rückfragen, Bestätigungen). Mit Angaben von Dateien und optionalen Parametern lassen sich alle Kommandos im CLI-/Batch-Modus automatisiert ausführen.
+
+##Optionen & Flags
+##----------------
+
+#KOMMANDO: # <Unterkommando> (Kurzbeschreibung)
+          Jedes Unterkommando bringt seine eigene Info-Datei mit detaillierten Optionen und Beispielen. Mit video <kommando> --help lassen sich alle Flags je Modul einsehen.
+
+#convert: # Universelle Videokonvertierung
+         Konvertiert Videos mit ffmpeg. Format, Auflösung, Framerate und Codec können gezielt für die Konvertierung gewählt werden; zusätzlich lässt sich ein Preset setzen, das Qualitätsniveau und Kodiergeschwindigkeit bestimmt.
+
+#compress: # Qualitätsbasierte Kompression
+          Komprimiert Videos mit ffmpeg über eine einfache Qualitätsangabe (0–100).
+
+#trim: # Schneiden/Trimmen von Clips
+      Schneidet/trimmt Videos mit ffmpeg anhand Start+Länge oder Start+Ende. Entweder schnell [verlustfrei/GOP-basiert (Stream-Copy)] oder präzise [Re-Encode, framegenau, mit optionalem Qualitäts-Preset].
+
+#scale: # Skalierung auf Zielauflösungen
+       Skaliert Videos auf eine Zielauflösung. Standardmäßig wird das Seitenverhältnis beibehalten, kann aber auch frei gewählt werden.
+
+#croppad: # Zuschneiden & Auffüllen
+         Zuschneiden oder Auffüllen (Padding) auf eine Zielauflösung – achsweise: Pro Achse wird zugeschnitten, wenn Ziel < Quelle, und aufgefüllt, wenn Ziel > Quelle. Offsets können das Crop-Fenster oder die Position auf der Zielleinwand verschieben. Bei Quellen mit Alpha wird transparentes Padding genutzt.
+
+#interpolate: # FPS-Erhöhung per Bewegungsinterpolation
+             Erhöht (oder normiert) die Bildrate eines Videos per Bewegungsinterpolation (ffmpeg minterpolate). Zielbildrate kann als Faktor zur Original-FPS (z. B. 2x) oder als absolute FPS (z. B. 60, 30000/1001) angegeben werden.
+
+#img2vid: # Bildsequenz → Video
+         Erzeugt aus einer Bildfolge ein Video mit ffmpeg. Die Bildreihenfolge wird natürlich sortiert (…1, …2, …10). Die Bildrate lässt sich als FPS (z. B. 25, 24000/1001), als Dauer pro Bild (z. B. 2s, 150ms) oder als Gesamtdauer angeben. Format, Auflösung, Codec und Preset können gezielt gewählt werden.
+
+#merge: # Streams zusammenführen
+       Kombiniert Videos mit zusätzlichen Videos und/oder Audiospuren und/oder Untertiteldateien. Auflösung, Vereinheitlichungs-Strategie, Offsets und optionale Verlängerung („extend“) können gezielt gewählt werden. Vorhandene Streams werden – wo möglich – verlustfrei übernommen; notwendige Re-Encodes erfolgen container-/codec-konform. Das erste gefundene Cover/Thumbnail aus den Eingaben wird extrahiert und ins Ergebnisvideo eingebettet.
+
+#extract: # Inhalte extrahieren
+         Extrahiert gezielt Inhalte aus Videodateien:
+         - Audiospuren (als MP3)
+         - Untertitelspuren (als Text- oder Bild-Subs)
+         - Einzelne Standbilder (Frames)
+         - „Video-only“-Versionen ohne Audio/Untertitel
+
+#enhance: # Klassische Video-Filter
+         Verbessert Videos mit ffmpeg-Filtern. Unterstützt Stabilisierung, Rauschreduzierung sowie Farb- und Helligkeitskorrektur über Presets oder frei wählbare Einzelparameter. Container- und Codecwahl erfolgt automatisch über die vorhandene Encoding-Logik, Audio-Streams werden passend übernommen.
+
+#aienhance: # KI-Upscaling & -Verbesserung
+           Skaliert und verbessert Videos mit KI-Modellen (Real-ESRGAN/RealCUGAN). Modellwahl, Skalierungsfaktor, Rauschreduzierung, Gesichtsverbesserung, TTA und Worker-Priorität können gezielt gesteuert werden. Container- und Codecwahl erfolgt automatisch über die vorhandene Encoding-Logik; alle relevanten Streams (Audio, Untertitel, Attachments, Kapitel, Metadaten) werden nach dem Upscaling per Remux – soweit möglich – wieder übernommen.
+
+#gif: # GIF-Erzeugung & Meme-Text
+     Erzeugt aus kurzen Videos oder bereits vorhandenen GIFs animierte GIF-Dateien und kann optional klassischen Meme-Text oben und/oder unten einblenden (weißer Text mit schwarzer Kontur, Impact-ähnliche Schrift). Standardmäßig werden Auflösung und Bildrate moderat begrenzt, um Dateigröße und Kompatibilität zu verbessern; mit einem Flag kann die Originalqualität weitgehend beibehalten werden.
+
+#metadata: # Metadaten lesen & bearbeiten
+Liest und bearbeitet Container-/Stream-Metadaten von Videodateien. Zeigt technische Infos (Container, Codec, Auflösung, Farbmetadaten, Audio-/Untertitel-Streams, Kapitel) an. Listet und gruppiert Metadaten in geschützte, bearbeitbare und sonstige Tags. Erlaubt das Setzen, Löschen und Abfragen von bearbeitbaren Tags (z. B. title, artist, production_year, genre, …). Unterstützt virtuelle, nur lesbare Felder (z. B. resolution, duration, audio_codec, alpha_channel, chapters, …). Kann eingebettete Thumbnails anzeigen, setzen oder löschen.
+
+##Hinweise
+##--------
+
+Interaktive Kommandos
+    Alle Kommandos starten ohne Dateinamen im interaktiven Modus:
+    Dateiauswahl über Menüs
+    Geführte Abfrage zentraler Parameter (Qualität, Auflösung, Codec/Format, Zeitfenster, FPS, KI-Modell, …)
+    Zusammenfassung der Einstellungen bevor ffmpeg/KI gestartet wird
+
+CLI-/Batch-Modus
+    Mit expliziten Dateiangaben und optionalen Flags arbeiten alle Kommandos non-interaktiv:
+    Mehrere Dateien lassen sich via Platzhalter (%) oder Shell-Globs (*.mkv) verarbeiten
+    Rückgabewerte eignen sich zur Auswertung in Shell-Skripten
+    Status- und Fortschrittsanzeige erfolgt über die eigene Konsolen-Ausgabe
+
+Gemeinsame Eigenschaften
+    ffmpeg wird möglichst robust aufgerufen (geeignete Filter, sichere Stream-Mappings, sinnvolle Defaults).
+    Wo technisch möglich, werden Thumbnails, Kapitel und Metadaten zwischen den Kommandos konsistent behandelt.
+    Alpha-/Transparenz-Unterstützung wird beachtet, wenn Container/Codec-Kombinationen diese erlauben.
+    KI-Funktionen (aienhance) nutzen dedizierte Worker-Logik mit optionaler GPU-Unterstützung.
+
+Rückgabewerte
+    0 Erfolg; ≠0 Fehler (z. B. fehlende Datei, ffmpeg-/Modellfehler, abgebrochene Operation).
+
+Platzhalter für Dateinamen
+    Das %-Zeichen dient als Platzhalter für nummerierte Dateien und wird in allen Kommandos einheitlich interpretiert:
+    file%.mkv → file001.mkv, file6.mkv, file030.mkv, …
+
+##Beispiele
+##---------
+Typische Workflows – Auszug:
+
+Konvertierung für Web:
+video convert film.avi --format mp4 --preset web --resolution 1080p --framerate 30
+
+Schneller verlustfreier Schnitt eines Intros:
+video trim episode01.mkv --start 00:00:05 --end 00:00:35
+
+Skalieren einer Staffel auf 720p:
+video scale staffel1_ep%.mkv --resolution 720p
+
+FPS-Interpolation auf 60 FPS:
+video interpolate gameplay.mp4 --factor 60
+
+Bildsequenz zu Video (25 FPS):
+video img2vid frames/frame_%.png --factor 25 --format mkv
+
+Zwei Videos und externer Untertiteldatei zusammenfügen:
+video merge film.mkv bonus.mkv subs_de.srt
+
+Alle Audiostreams & englische Untertitel aus mehreren Dateien extrahieren:
+video extract film%.mkv --audio --subtitle en
+
+Leichtes Rauschen reduzieren und stabilisieren:
+video enhance vacation.mp4 --preset realistic
+
+Serie per KI auf 4K hochskalieren:
+video aienhance ep%.mkv --model realesr-general-x4v3 --scale 2 --priority medium
+
+Meme-GIF aus kurzem Clip erstellen:
+video gif clip.mp4 --text-top "WHEN CODE WORKS" -ft grande --text-bottom "AND YOU DON’T KNOW WHY" -fb small
+
+Metadaten für eine Staffel setzen:
+video metadata ep%.mkv --show "Meine Serie" --season_number 1 --production_year 2024

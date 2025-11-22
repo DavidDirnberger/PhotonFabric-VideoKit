@@ -1,0 +1,113 @@
+###PhotonFabric VideoKit – convert (EN)
+
+##Short description
+##-----------------
+Converts videos using ffmpeg. Supports interactive mode (without file argument) and CLI mode (with file argument and optional flags). Format, resolution, frame rate and codec can be selected explicitly; in addition, a preset can be chosen which controls quality level and encoding speed. All existing streams (cover/thumbnail, subtitle tracks and audio tracks) are included by default or copied losslessly where container/codec allow it.
+
+##Usage
+##-----
+video convert [FILES] [--format FORMAT] [--codec CODEC] [--preset PRESET] [--resolution RES] [--framerate FPS] [--output PATH]
+
+##Options & Flags
+##----------------
+#--format, -f: # <string> (default=mp4)
+              Target container.
+              §keep§ Keeps the source container for each file.
+              §mp4§ Supports multiple audio and subtitle tracks, some metadata, chapters and thumbnail. Widely used, highly compatible, ideal for web and mobile. Codecs: h264, hevc, av1, mpeg4
+              §mkv§ Supports multiple audio and subtitle tracks, all metadata, chapters, thumbnail, alpha channel and most codecs; ideal for archiving multimedia videos. Codecs: h264, hevc, av1, vp9, vp8, mpeg2video, mpeg4, prores, dnxhd, jpeg2000, mjpeg, ffv1, huffyuv, utvideo, theora, png, magicyuv, cineform, rawvideo
+              §avi§ Supports only a few metadata fields and alpha channel. Older format with larger file sizes and less efficient compression. Codecs: mpeg4, cineform, mjpeg, huffyuv, utvideo, hap, rawvideo
+              §mov§ Supports multiple audio and subtitle tracks, some metadata, chapters and alpha channel. Apple QuickTime format, high quality, best suited for macOS/iOS. Codecs: prores, dnxhd, h264, hevc, jpeg2000, qtrle, hap, cineform, mjpeg, png
+              §webm§ Supports all metadata. Open format optimized for use on the web. Codecs: vp9, vp8, av1
+              §mpeg§ Former standard (MPEG-1/2) used on older systems and for DVDs. Codecs: mpeg1video, mpeg2video
+
+#--codec, -c: # <string> (default=h264)
+             Target video codec.
+             §copy§ Attempts bitstream copy.
+             §h264§ Widely used with good efficiency and broad hardware support. Mathematically lossless possible.
+             §hevc§ More efficient than H.264 (typically 25–50% lower bitrate at similar quality). Requires newer devices/players and suitable licensing. Mathematically lossless possible.
+             §av1§ Royalty-free and very efficient; support in browsers and hardware is growing quickly. Mathematically lossless possible.
+             §vp9§ Open web codec; often 20–50% smaller than H.264 at similar quality. Typically used in WebM. Mathematically lossless possible.
+             §vp8§ Older open web codec (8-bit 4:2:0) with high compatibility. Typically used in WebM.
+             §mpeg4§ Older than H.264, less efficient but easy to decode. Historically Xvid/DivX class, today mostly used for compatibility.
+             §prores§ Intraframe mezzanine codec for editing/grading (10-bit 4:2:2/4:4:4:4 depending on profile); alpha supported.
+             §dnxhd§ Intraframe mezzanine codec for editing/proxy workflows.
+             §jpeg2000§ Intraframe codec commonly used in DCP/archiving. Alpha possible; mathematically lossless possible.
+             §mjpeg§ Intraframe, robust and highly compatible. Larger files; useful for capture/intermediate files.
+             §ffv1§ Lossless intraframe codec with high efficiency; popular for long-term archiving. Supports 10-bit and optional checksums. Mathematically lossless; alpha possible.
+             §huffyuv§ Lossless and very fast; historically widespread. Mathematically lossless and alpha possible.
+             §utvideo§ Lossless, fast and cross-platform. Popular as intermediate codec, mathematically lossless possible and supports RGBA.
+             §theora§ Free older video codec, nowadays rarely used.
+             §qtrle§ Intraframe codec with alpha support; good for UI captures and graphics. Typically used in the MOV container. Mathematically lossless possible.
+             §hap§ GPU-friendly intraframe codec for real-time playback with alpha support. Common in live/installation setups; usually stored as MOV.
+             §rawvideo§ Uncompressed and maximally compatible. Very large files; virtually no encoder options. Lossless by definition and alpha possible (RGBA).
+             §png§ PNG-based intraframe video; lossless and supports alpha. Suitable for graphics/compositing, but produces much larger files. Mathematically lossless; alpha possible.
+             §magicyuv§ Very fast, mathematically lossless intraframe codec. Alpha (RGBA) possible.
+             §cineform§ Intraframe codec for performant editing; 10-/12-bit YUV/RGB depending on build. Alpha possible (RGBA).
+             §mpeg1video§ Older standard (VCD/early MPEG), robust in .mpg/.mpeg (MPEG-PS). Closely related to the MPEG-PS container.
+             §mpeg2video§ Classic broadcast/DVD codec; robust but requires higher bitrates. Common in MPEG-TS/PS and archival workflows.
+
+#--preset, -p: # <string> (default=casual)
+              Quality/speed profile; may implicitly set max_fps, faststart and scaling (only for messenger & web).
+              §messenger360p§ Very fast, low quality, 640 px width (360p), small file size for chat apps (H.264/MP4 recommended).
+              §messenger720p§ Fast encoding, good file size, 1280 px width (720p); ideal for messengers.
+              §web§ Fast encoding, reduced file size, maximum compatibility and solid quality for online use.
+              §casual§ Balanced quality, speed and maximum compatibility (for everyday videos).
+              §cinema§ High quality, slower encoding and high compatibility (film-like output).
+              §studio§ Very high quality, potentially at the expense of compatibility, for master/archive use in practical file sizes.
+              §ultra§ Maximum visual quality without regard to compatibility, but not truly lossless.
+              §lossless§ Mathematically lossless (where the codec supports it), otherwise near-lossless as far as the format+codec combination allows. Very large files, slow encoding.
+
+#--resolution, -r: # <string> (default=original)
+                  Target resolution. custom requires input W:H (even numbers, ≤ source). If the aspect ratio differs from the source, the smaller dimension is enforced and the other one is scaled proportionally.
+                  §original§ Keep original resolution, depending on the selected preset.
+                  §240p§ 426:240 (16:9)
+                  §360p§ 640:360 (16:9)
+                  §480p§ 854:480 (16:9)
+                  §720p§ 1280:720 (16:9)
+                  §1080p§ 1920:1080 (16:9)
+                  §1440p§ 2560:1440 (16:9)
+                  §QHD+§ 3200:1800 (~16:9) [laptop displays]
+                  §4K§ 3840:2160 (16:9) 2160p Ultra High Definition
+                  §4K-DCI§ 4096:2160 (17:9) Digital Cinema Initiatives
+                  §8K§ 7680:4320 (16:9) 4320p Full Ultra High Definition
+                  §8K-DCI§ 8192:4320 (17:9) Digital Cinema Initiatives
+                  §custom§ Custom resolution (width:height).
+
+#--framerate, -fr: # <string> (default=original, type=rational or integer, examples=30, 24000/1001)
+                  Frame-rate limit. For presets with max_fps, the result is clamped to ≤max_fps. For lossless the original frame rate is always kept.
+
+#--output, -o: # <string> (default=empty)
+              Output path/file. If omitted: same base filename, suffix converted[{codec}{scale}{fps}], extension = target container (if changed).
+
+##Notes
+##-----
+
+Interactive mode
+Step-by-step selection: preset → format → container-specific codec → resolution (incl. custom) → optional FPS limit.
+
+Streams are mapped automatically (video + optional audio). The source cover/thumbnail is extracted and re-embedded after successful conversion.
+
+The target pixel format is detected and displayed.
+
+GPU/Hardware
+Prefers hardware encoders (e.g. NVENC/VAAPI/QSV), falls back to software encoding when not available.
+
+m4v is treated as an alias of mp4.
+
+Return codes
+0 on success; ≠0 for ffmpeg/environment errors.
+
+The % character acts as a placeholder for numbering:
+file%.mkv => file001.mkv, file6.mkv, file030.mkv, ...
+
+##Examples
+##---------
+video convert film.avi --format mp4 --preset web --resolution 1080p --framerate 30
+
+video convert clip%.mkv --preset messenger720p
+
+video convert input.mp4 --format webm --codec vp9 --resolution custom=1280x720 --framerate 24000/1001
+
+video convert input.webm --resolution 840x460
+
+video convert sample.mov --preset lossless --format mp4

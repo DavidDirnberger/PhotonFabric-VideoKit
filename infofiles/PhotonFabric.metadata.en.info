@@ -1,0 +1,129 @@
+###PhotonFabric VideoKit – metadata (EN)
+
+##Short description
+##-----------------
+Reads and edits container/stream metadata of video files. Supports an interactive mode (without file argument) with targeted queries as well as a batch/CLI mode (with file argument + optional flags). Shows technical info (container, codec, resolution, color metadata, audio/subtitle streams, chapters). Lists and groups metadata into protected, editable and other tags. Allows setting, deleting and querying editable tags (e.g. title, artist, production_year, genre, …). Supports virtual, read-only fields (e.g. resolution, duration, audio_codec, alpha_channel, chapters, …). Can display, set or delete embedded thumbnails.
+
+##Usage
+##-----
+video metadata [FILES] [--list-tags] [--list-tags-json] [--all] [--list-tagnames] [--tag KEY[=VALUE]] [--set-tag-KEY VALUE] [--delete-tag-KEY] [--list-tag-KEY] [--set-thumbnail IMAGE] [--delete-thumbnail] [--show-thumbnail]
+
+##Options & Flags
+##----------------
+
+#FILES: # <path or pattern> (default=empty)
+       One or more input files. Without additional flags, all metadata are printed as with --list-tags.
+
+#--list-tags: # <bool-flag> (default=false)
+             Shows a formatted overview per file:
+             - File info (name, size, container, duration, resolution, pixel format, color primaries, range, …)
+             - Video block (resolution, SAR/DAR, pixel format, FPS)
+             - Color info (primaries/TrC/matrix/range, incl. raw values)
+             - Alpha/transparency info
+             - Audio summary (codec, bitrate, channels, language, …)
+             - Number of audio/subtitle streams incl. optional short list
+             - Number of chapters (+ list when --all)
+             - Metadata grouped into protected, editable and other tags.
+
+#--list-tags-json: # <bool-flag> (default=false)
+                  Outputs the entire overview for each file as a structured JSON structure to stdout.
+
+#--list-tagnames: # <bool-flag> (default=false)
+                 Lists all known metadata keys with their localized label and description:
+                 - Editable tags (e.g. title, artist, album, production_year, genre, keywords, description, rating, …)
+                 - Protected tags (e.g. major_brand, encoder, creation_time, make, model, …)
+                 - Virtual, read-only fields (e.g. container, duration, resolution, fps, alpha_channel, audio_codec, chapters, …)
+                 No files are required for this overview.
+
+#--tag: # <KEY or KEY=VALUE> (can be repeated, default=empty)
+       Generic read/write interface:
+       - --tag title → prints only the value of the title tag per file (if set).
+       - --tag title="My Movie" → sets the editable title tag to this value.
+       - --tag production_year=2024 → sets the production year.
+       - Multiple --tag options are allowed, e.g. --tag title --tag artist.
+       - Protected keys can be read but not modified with this.
+
+#--all: # <bool-flag> (default=false)
+       Extends output in list/JSON mode:
+       - --list-tags --all → additionally lists all audio streams, subtitle streams and chapters in full.
+       - --list-tags-json --all → adds detailed stream and chapter lists into the JSON.
+
+#Tag-specific flags (editable keys): #
+      For every KEY from --list-tagnames (e.g. title, artist, genre, production_year, …) the following patterns are available automatically:
+
+      - `--KEY VALUE`
+        Sets the tag directly.
+        Example: `--title "My Movie"` or `--genre "Sci-Fi"`
+
+      - `--KEY`
+        Prints only the value of this tag.
+
+      - `--set-tag-KEY VALUE`
+        Explicitly sets a tag (semantically like `--KEY VALUE`).
+
+      - `--delete-tag-KEY`
+        Deletes an existing value for this tag from the file (if present).
+
+      - `--list-tag-KEY`
+        Prints the current value (one line per file) without modifying the file.
+
+#--set-thumbnail: # <path or pattern>
+                 Sets or replaces the thumbnail with the specified image.
+
+#--delete-thumbnail: # <bool-flag>
+                    Removes an existing embedded thumbnail from the file.
+
+#--show-thumbnail: # <bool-flag>
+                  Opens the currently embedded thumbnail in the default image viewer (if present).
+
+##Notes
+##-----
+
+Interactive mode
+      Calling without flags and without file name starts an interactive view:
+      Displays technical video info (resolution, FPS, codec, pixel format, color space, alpha, audio/subtitle streams, chapters). Displays existing metadata grouped into protected, editable and other. Optional edit dialog in which individual editable tags can be selected, set or deleted. Thumbnails can be set or removed interactively (if supported).
+
+Batch/CLI mode
+      Without files and with --list-tagnames only the tag overview is printed.
+
+Write behavior
+      Metadata changes are written in-place into the file (via metadata_support), including special handling for AVI and container-specific quirks. After writing, it is checked whether all requested tags were applied; discrepancies trigger a warning. Protected tags are never modified, even if they appear in --tag/set_map.
+
+Technical details
+      Color info (primaries, transfer/TrC, matrix, range) is read from ffprobe fields color_primaries, color_transfer, color_space, color_range and translated into readable short forms. Alpha support and actual transparency are determined via FFmpeg analysis of the alpha channels. For AVI files, exiftool can additionally be used to supplement certain metadata (e.g. ArchivalLocation).
+
+Return codes
+      0 on success (including read-only operations). ≠0 on errors (e.g. no file, ffprobe/ffmpeg error, failed write operation, etc.).
+
+Filename placeholders
+      As with other commands:
+      file%.mkv → file001.mkv, file6.mkv, file030.mkv, … are expanded automatically.
+
+##Examples
+##--------
+Show all metadata (interactive, single file):
+video metadata film.mkv
+
+Show all known tag names with description:
+video metadata --list-tagnames
+
+Compact overview of all metadata for multiple files (batch):
+video metadata season1_ep%.mkv --list-tags
+
+Read only title and production year:
+video metadata film.mkv --tag title --tag production_year
+
+Set title and production year for multiple episodes:
+video metadata ep%.mkv --title "My Series" --production_year 2024
+
+Delete individual tags:
+video metadata film.mkv --delete-tag-comment --delete-tag-keywords
+
+JSON export of all metadata with full stream/chapter list:
+video metadata film.mkv --list-tags-json --all > meta_film.json
+
+Set thumbnail from external PNG file:
+video metadata film.mkv --set-thumbnail cover.png
+
+Show embedded thumbnail:
+video metadata film.mkv --show-thumbnail

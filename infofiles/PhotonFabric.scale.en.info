@@ -1,0 +1,71 @@
+###PhotonFabric VideoKit – scale (EN)
+
+##Short Description
+##----------------
+Scales videos to a target resolution. Supports interactive mode (without file argument) and batch mode (with file argument and optional flags). By default, the aspect ratio is preserved. When choosing original, any encoder alignment (e.g., width/height divisible by 2/8/16) is automatically corrected if needed. The source cover/thumbnail is preserved and re-embedded after scaling.
+
+##Usage
+##------
+video scale [FILES] [--resolution RES] [--preserve-ar BOOL] [--output PATH]
+
+##Options & Flags
+##----------------
+
+#--resolution, -r: # <string> (default=original)
+                  Target resolution. custom requires input W:H (even values, ≤ source). With aspect ratio preserved, W:H acts as a “max-box” (bounding box).
+                  §original§ Keep the original resolution; only fixes odd dimensions (encoder alignment).
+                  §240p§ 426:240 (16:9)
+                  §360p§ 640:360 (16:9)
+                  §480p§ 854:480 (16:9)
+                  §720p§ 1280:720 (16:9)
+                  §1080p§ 1920:1080 (16:9)
+                  §1440p§ 2560:1440 (16:9)
+                  §QHD+§ 3200:1800 (~16:9)
+                  §4K§ 3840:2160 (16:9)
+                  §4K-DCI§ 4096:2160 (17:9)
+                  §8K§ 7680:4320 (16:9)
+                  §8K-DCI§ 8192:4320 (17:9)
+                  §custom§ User-defined (Width:Height), even numbers required; accepted separators: ':', ',', '/', 'x', 'X', ';', '-' and space.
+
+#--preserve-ar, -ar: # <bool> (default=true)
+                   Preserve aspect ratio or allow arbitrary scaling.
+                   §true§ Preserve aspect ratio (recommended). With custom, W:H is interpreted as a max-box.
+                   §false§ Ignore aspect ratio; scale exactly to W:H (possible stretching).
+
+#--output, -o: # <string> (default=empty)
+              Output path/file. If omitted: same filename, suffix _scaled or _scaled_WxH; container/codec remain appropriate to the source or the chosen target container.
+
+##Notes
+##--------
+Interactive Mode
+Step-by-step selection: resolution (incl. custom) → optionally preserve aspect ratio (Yes/No).
+
+Encoder Alignment
+Many encoders require even width/height (divisible by 2/8/16). original fixes this automatically without visible scaling. For an explicit target resolution, the requested size may be minimally rounded to encoder-compatible values.
+
+Aspect Ratio
+With --preserve-ar true (default), a given target resolution serves as an upper bound (bounding box). With false, scaling is exact to W:H (possible distortion).
+
+Streams & Metadata
+Video is re-encoded; audio/subtitles are mapped sensibly via the Plan-API. Existing cover/thumbnail is extracted and re-embedded after successful scaling.
+
+GPU/Hardware
+Prefers available HW encoders (e.g., NVENC/VAAPI/QSV); otherwise falls back to software.
+
+Return Codes
+0 Success; ≠0 Error from ffmpeg/environment.
+
+Placeholders
+The % sign acts as a placeholder for numbering: file%.mkv ⇒ file001.mkv, file6.mkv, file030.mkv, …
+
+##Examples
+##---------
+video scale clip.mp4 --resolution 1080p
+
+video scale film%.mkv --resolution 720p
+
+video scale input.webm --resolution 1800x900
+
+video scale sample.mov --resolution 320x240 --preserve-ar false
+
+video scale raw.mov --resolution original

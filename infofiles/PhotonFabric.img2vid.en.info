@@ -1,0 +1,150 @@
+###PhotonFabric VideoKit – img2vid (EN)
+
+##Short Description
+##----------------
+Creates a video from an image sequence using ffmpeg. Supports interactive mode (no file passed) and batch mode (files passed with optional flags). Images are naturally sorted (…1, …2, …10). The frame pacing can be given as FPS (e.g., 25, 24000/1001), as duration per image (e.g., 2s, 150ms), or as total duration — the selected-parameters display reflects this exactly (e.g., "200ms/img"). Format, resolution, codec, and preset can be chosen explicitly. Alpha channels are preserved where the chosen codec/container supports them.
+
+##Usage
+##------
+video img2vid [IMAGES/FOLDERS] [--preset PRESET] [--format FORMAT] [--codec CODEC] [--resolution RES] [--framerate FPS|DURATION] [--duration TOTAL] [--scale] [--output PATH]
+
+##Options & Flags
+##----------------
+
+#--preset, -p: # <string> (default=casual)
+              Quality/speed profile; may implicitly set max_fps, faststart and scaling (only for messenger & web).
+              §messenger360p§ Very fast, low quality, 640 px width (360p), small file size for chat apps (H.264/MP4 recommended).
+              §messenger720p§ Fast encoding, good file size, 1280 px width (720p); ideal for messengers.
+              §web§ Fast encoding, reduced file size, maximum compatibility and solid quality for online use.
+              §casual§ Balanced quality, speed and maximum compatibility (for everyday videos).
+              §cinema§ High quality, slower encoding and high compatibility (film-like output).
+              §studio§ Very high quality, potentially at the expense of compatibility, for master/archive use in practical file sizes.
+              §ultra§ Maximum visual quality without regard to compatibility, but not truly lossless.
+
+#--format, -f: # <string> (default=mp4)
+              Target container.
+              §keep§ Keeps the source container for each file.
+              §mp4§ Supports multiple audio and subtitle tracks, some metadata, chapters and thumbnail. Widely used, highly compatible, ideal for web and mobile. Codecs: h264, hevc, av1, mpeg4
+              §mkv§ Supports multiple audio and subtitle tracks, all metadata, chapters, thumbnail, alpha channel and most codecs; ideal for archiving multimedia videos. Codecs: h264, hevc, av1, vp9, vp8, mpeg2video, mpeg4, prores, dnxhd, jpeg2000, mjpeg, ffv1, huffyuv, utvideo, theora, png, magicyuv, cineform, rawvideo
+              §avi§ Supports only a few metadata fields and alpha channel. Older format with larger file sizes and less efficient compression. Codecs: mpeg4, cineform, mjpeg, huffyuv, utvideo, hap, rawvideo
+              §mov§ Supports multiple audio and subtitle tracks, some metadata, chapters and alpha channel. Apple QuickTime format, high quality, best suited for macOS/iOS. Codecs: prores, dnxhd, h264, hevc, jpeg2000, qtrle, hap, cineform, mjpeg, png
+              §webm§ Supports all metadata. Open format optimized for use on the web. Codecs: vp9, vp8, av1
+              §mpeg§ Former standard (MPEG-1/2) used on older systems and for DVDs. Codecs: mpeg1video, mpeg2video
+
+#--codec, -c:  # <string> (default=h264)
+             Target video codec.
+             §copy§ Attempts bitstream copy.
+             §h264§ Widely used with good efficiency and broad hardware support. Mathematically lossless possible.
+             §hevc§ More efficient than H.264 (typically 25–50% lower bitrate at similar quality). Requires newer devices/players and suitable licensing. Mathematically lossless possible.
+             §av1§ Royalty-free and very efficient; support in browsers and hardware is growing quickly. Mathematically lossless possible.
+             §vp9§ Open web codec; often 20–50% smaller than H.264 at similar quality. Typically used in WebM. Mathematically lossless possible.
+             §vp8§ Older open web codec (8-bit 4:2:0) with high compatibility. Typically used in WebM.
+             §mpeg4§ Older than H.264, less efficient but easy to decode. Historically Xvid/DivX class, today mostly used for compatibility.
+             §prores§ Intraframe mezzanine codec for editing/grading (10-bit 4:2:2/4:4:4:4 depending on profile); alpha supported.
+             §dnxhd§ Intraframe mezzanine codec for editing/proxy workflows.
+             §jpeg2000§ Intraframe codec commonly used in DCP/archiving. Alpha possible; mathematically lossless possible.
+             §mjpeg§ Intraframe, robust and highly compatible. Larger files; useful for capture/intermediate files.
+             §ffv1§ Lossless intraframe codec with high efficiency; popular for long-term archiving. Supports 10-bit and optional checksums. Mathematically lossless; alpha possible.
+             §huffyuv§ Lossless and very fast; historically widespread. Mathematically lossless and alpha possible.
+             §utvideo§ Lossless, fast and cross-platform. Popular as intermediate codec, mathematically lossless possible and supports RGBA.
+             §theora§ Free older video codec, nowadays rarely used.
+             §qtrle§ Intraframe codec with alpha support; good for UI captures and graphics. Typically used in the MOV container. Mathematically lossless possible.
+             §hap§ GPU-friendly intraframe codec for real-time playback with alpha support. Common in live/installation setups; usually stored as MOV.
+             §rawvideo§ Uncompressed and maximally compatible. Very large files; virtually no encoder options. Lossless by definition and alpha possible (RGBA).
+             §png§ PNG-based intraframe video; lossless and supports alpha. Suitable for graphics/compositing, but produces much larger files. Mathematically lossless; alpha possible.
+             §magicyuv§ Very fast, mathematically lossless intraframe codec. Alpha (RGBA) possible.
+             §cineform§ Intraframe codec for performant editing; 10-/12-bit YUV/RGB depending on build. Alpha possible (RGBA).
+             §mpeg1video§ Older standard (VCD/early MPEG), robust in .mpg/.mpeg (MPEG-PS). Closely related to the MPEG-PS container.
+             §mpeg2video§ Classic broadcast/DVD codec; robust but requires higher bitrates. Common in MPEG-TS/PS and archival workflows.
+
+#--resolution, -r: # <string> (default=original)
+                  Target resolution. Accepts 'original', 'custom' (prompts for W:H), fixed tiers (e.g., 720p), and auto values for mixed source sizes.
+                  §original§ No size change.
+                  §smallest§ Smallest detected source resolution (relevant only when sources differ).
+                  §average§ Average source resolution (relevant only when sources differ).
+                  §largest§ Largest detected source resolution (relevant only when sources differ).
+                  §240p§ 426:240 (16:9)
+                  §360p§ 640:360 (16:9)
+                  §480p§ 854:480 (16:9)
+                  §720p§ 1280:720 (16:9)
+                  §1080p§ 1920:1080 (16:9)
+                  §1440p§ 2560:1440 (16:9)
+                  §QHD+§ 3200:1800 (~16:9) [laptop displays]
+                  §4K§ 3840:2160 (16:9) 2160p Ultra High Definition
+                  §4K-DCI§ 4096:2160 (17:9) Digital Cinema Initiatives
+                  §8K§ 7680:4320 (16:9) 4320p Full Ultra High Definition
+                  §8K-DCI§ 8192:4320 (17:9) Digital Cinema Initiatives
+                  §custom§ Custom resolution (Width:Height; even values recommended).
+
+#--scale, -s: # <flag>   (default=off)
+             Resolution adjustment when a target resolution is chosen:
+             • omitted   → Crop/Pad (keep aspect ratio, no scaling; may crop/letterbox/pillarbox).
+             • provided  → Scale exactly to the target resolution (aspect ratio may change).
+
+#--framerate, -fr: # <string> (default=25, type=rational/integer or per-image duration, examples=30, 24000/1001, 2s, 150ms)
+                  Frame pacing:
+                  • FPS mode → constant frame rate (CFR).
+                  • Duration per image (e.g., 2s, 150ms) → variable frame rate (VFR) via concat demuxer; the display shows e.g., "200ms/img".
+
+#--duration, -d: # <string> (default=empty; examples=10s, 1:30, 90)
+                Total duration of the output video. Behavior:
+                • Only --duration (without explicit --framerate) → VFR: time is distributed evenly across all images.
+                • --duration + explicit --framerate → CFR at the chosen FPS (total duration is filled accordingly).
+
+#--output, -o: # <string> (default=empty)
+              Output path/file. If omitted: placed in the common source folder, named {folder}_slideshow.{format}.
+
+##Notes
+##--------
+Inputs
+Supported image formats: .png, .jpg, .jpeg, .bmp, .tif, .tiff, .webp. You can pass individual files and/or folders; ordering is natural (…1, …2, …10).
+
+Timing modes
+FPS (--framerate 25, --framerate 24000/1001): constant frame rate (CFR).
+Per-image duration (--framerate 2s, --framerate 150ms): variable frame rate (VFR); internally uses the ffconcat demuxer with exact per-image durations.
+Total duration (--duration 1:30): interactively, CFR can optionally be enforced; in batch mode the rule is: without explicit --framerate → VFR, with explicit --framerate → CFR.
+
+Resolution & mixed sizes
+For mixed source sizes, auto targets are available: §smallest§, §average§, §largest§.
+Without --scale, Crop/Pad brings the output to the target resolution (keeps aspect ratio, no scaling). With --scale, the images are scaled exactly to the target resolution (aspect ratio may change).
+
+Alpha channel
+PNG-video and several codecs (e.g., ProRes 4444, qtrle, ffv1, utvideo, hap) can carry alpha. If such a codec is chosen, alpha is preserved. For Crop/Pad, transparent padding is used where possible.
+
+GPU/Hardware
+Prefers available HW encoders (NVENC/VAAPI/QSV); falls back to software. Certain presets may set a max_fps cap.
+
+Return codes
+0 success; ≠0 errors from ffmpeg/environment.
+
+Placeholder
+The % character is a placeholder for numbering in filenames (general convention in this toolkit): file%.png → file001.png, file6.png, file030.png, …
+
+##Examples
+##---------
+Convert images to MP4 at 25 fps (default):
+video img2vid ./frames --framerate 25 --format mp4 --codec h264
+
+Cinematic frame rate (NTSC):
+video img2vid ./stills --framerate 24000/1001 --preset cinema --format mkv --codec hevc
+
+Per-image duration (2 seconds), WebM/VP9 (display: "2s/img"):
+video img2vid ./slides --framerate 2s --format webm --codec vp9
+
+Distribute total duration of 10s evenly (VFR):
+video img2vid ./shots --duration 10s --format mp4 --codec h264
+
+Total duration 10s, but enforce CFR at 30 fps:
+video img2vid ./shots --duration 10s --framerate 30 --format mp4 --codec h264
+
+Auto target resolution (smallest source) without scaling:
+video img2vid ./mix --resolution smallest --format mkv
+
+Scale exactly to 1080p (AR may change):
+video img2vid ./posters --resolution 1080p --scale --format mp4 --codec h264
+
+Preserve alpha (PNG-video, RGBA):
+video img2vid ./overlays --framerate 30 --format mov --codec png --resolution 1080p
+
+Archival lossless (FFV1 in MKV):
+video img2vid ./scan --framerate 25 --format mkv --codec ffv1 --preset lossless

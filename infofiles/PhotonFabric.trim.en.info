@@ -1,0 +1,85 @@
+###PhotonFabric VideoKit – trim (EN)
+
+##Short description
+##----------------
+Cuts/trims videos with ffmpeg using Start+Duration or Start+End. Supports interactive mode (without a file argument) and batch mode (with a file argument and optional flags). Two operating modes: Fast (lossless/GOP-based, stream copy) and Precise (re-encode, frame-accurate) with an optional quality preset.
+
+##Usage
+##------
+video trim [FILES] [--start TIME] [--duration TIME | --end TIME] [--precise] [--quality PRESET] [--output PATH]
+
+##Options & Flags
+##----------------
+Supported formats: [-]SS[.fff], [-]MM:SS, [-]HH:MM:SS, [-]{PERCENT}%, [-]{PERCENT}p, [-]{PERCENT}P
+If preceded by ‘-’, the specified time is subtracted from the total duration => -1:20 for a video length of 20:00 means 18:40.
+
+#--start, -s: # <time> (default=0:00)
+             Start time of the segment.
+
+#--duration, -d: # <time> (default=1:00)
+                Length of the segment (relative to --start).
+
+#--end, -e: # <time> (default=empty)
+           Absolute end of the segment.
+           Must not be used together with --duration (if both are provided, duration takes precedence).
+
+#--precise, -p: # <flag> (default=off)
+               Enables precise, frame-accurate trimming via re-encode.
+               Without this flag, trimming is fast/lossless (GOP-based) and video/audio/subtitles are carried over via stream copy.
+
+#--quality, -q: # <string> (default=cinema, only with --precise)
+               Quality/speed profile for the precise mode.
+               §messenger360p§ very fast, low quality (small)
+               §messenger720p§ fast, compact
+               §web§ fast, web-oriented
+               §casual§ balanced
+               §cinema§ high quality
+               §studio§ very high quality
+               §ultra§ maximum visual quality
+               §lossless§ mathematically lossless (very large, slow)
+
+#--output, -o: # <string> (default=empty)
+              Output path/file. If omitted: same filename, suffix _trimmed, extension = source container (or a compatible container).
+
+##Notes
+##--------
+Interactive mode
+Asks for the start time and either duration or end time, shows a preview (when possible), and lets you choose between Fast (lossless) and Precise (re-encode); in precise mode you can choose a quality preset.
+
+Modes & accuracy
+Fast (lossless/GOP): very fast, copies video/audio/subtitles (bitstream copy). Cut points lie on keyframes; start/end may therefore deviate slightly from the exact frame.
+Precise (re-encode): frame-accurate; picks a suitable codec/encoder for the target container and the chosen preset (slower).
+
+Stream mapping & subtitles
+Streams are mapped with container awareness. MP4: text-based subtitles are converted to mov_text; MKV: subtitles are copied. Video/audio are copied in the fast method (-c:v copy, -c:a copy).
+
+Container/Codec
+The source container is generally preserved. If a codec is not allowed in the target container, a compatible codec is chosen automatically (info message in the terminal).
+
+Faststart
+For MP4/M4V, faststart is set automatically (faster streaming/playback).
+
+Fallback
+If the lossless copy method fails (e.g., problematic keyframe placement), it automatically falls back to a low-loss/lossless re-encode with identical parameters.
+
+Cover/Thumbnail
+Existing covers/thumbnails (e.g., in MP4/MKV) are extracted and re-embedded after a successful trim.
+
+Return codes
+0 success; ≠0 errors from ffmpeg/environment.
+
+Patterns for file sequences
+The % character is a placeholder for numbering: file%.mkv ⇒ file001.mkv, file6.mkv, file030.mkv, …
+
+Dependencies
+ffmpeg, ffprobe
+
+##Examples
+##---------
+video trim film.mp4 --start 0:30 --duration 20
+
+video trim input.mkv --start 01:00:00 --end 01:05:30 --precise --quality cinema
+
+video trim clip%.mp4 --start 10 --duration 30%
+
+video trim sample.mov --start 2:00 --duration 1:00 --output sample_trim.mov

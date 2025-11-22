@@ -1,0 +1,88 @@
+###PhotonFabric VideoKit – gif (DE)
+
+##Kurzbeschreibung
+##----------------
+Erzeugt aus kurzen Videos oder bereits vorhandenen GIFs animierte GIF-Dateien und kann optional klassischen Meme-Text oben und/oder unten einblenden (weiß mit schwarzer Kontur, Impact-ähnliche Schrift). Unterstützt interaktiven Modus (ohne Dateiangabe) und CLI-Modus (mit Dateiangabe und Flags). Standardmäßig werden Auflösung und Bildrate ggf. moderat begrenzt, um Dateigröße und Kompatibilität zu verbessern; mit einem Flag kann die Originalqualität weitgehend beibehalten werden.
+
+##Aufruf
+##------
+video gif [DATEIEN] [--text-top TEXT] [--text-bottom TEXT] [--font-size SIZE] [--fs-top SIZE] [--fs-bottom SIZE] [--keep-quality] [--no-auto-open] [--output PFAD]
+
+##Optionen & Flags
+##----------------
+
+#--text-top, -tt: # <string> (default=leer)
+                 Textzeile oben im GIF (Meme-Text).
+
+#--text-bottom, -tb: # <string> (default=leer)
+                    Textzeile unten im GIF (Meme-Text).
+
+#--font-size, -fs: # <string|int> (default=medium)
+                  Globale Schriftgröße für beide Textzeilen, sofern keine individuellen Größen angegeben werden. Kann entweder die direkte Schriftgröße, ein Zahlenwert (Pixel minimum von 8px) oder eins aus den folgenden Labels sein:
+                  §thiny§ - 15px
+                  §small§ - 28px
+                  §medium§ - 43px
+                  §grande§ - 61px
+                  §large§ - 82px
+                  §huge§ - 105px
+                  Bei einem gesetzten Label beziehen sich die Werte für die Schriftgröße auf die automatisch gesetzte Auflösung, wenn die Qualität erhalten werden soll (--keep-quality) dann werden die Schriftgrößen entsprechend der Auflösung angepasst.
+
+#--fs-top, -ft: # <string|int> (default=verwendet font-size)
+               Individuelle Schriftgröße nur für die obere Textzeile. Gleiche optionen und Verhaltensweisen wie bei --font-size. Übersteuert den globalen Wert von --font-size für den oberen Text.
+
+#--fs-bottom, -fb: # <string|int> (default=verwendet font-size)
+                  Individuelle Schriftgröße nur für die untere Textzeile. Gleiche optionen und Verhaltensweisen wie bei --font-size. Übersteuert den globalen Wert von --font-size für den unteren Text.
+
+#--keep-quality, -q: # <bool-Flag> (default=false)
+                    Deaktiviert die automatische Begrenzung von Auflösung und Bildrate.
+                    • Ohne Flag (default):
+                    - Bildrate wird auf maximal ~20 FPS begrenzt (falls Quelle darüber liegt).
+                    - Breite wird auf maximal ~480 Pixel skaliert (Seitenverhältnis bleibt erhalten).
+                    → kleinere Dateien, bessere Kompatibilität und schnelleres Erstellen.
+                    • Mit Flag (--keep-quality):
+                    - Verwendet die Originalauflösung und Bildrate, soweit möglich.
+                    → größere Dateien, dafür möglichst viel Detail und flüssigere Animation.
+
+#--no-auto-open, -na: # <bool-Flag> (default=false)
+                  Öffnet die erzeugten GIFs nach erfolgreicher Erstellung automatisch im Standard-Bildbetrachter.
+
+#--output, -o: # <string> (default=automatisch)
+              Ausgabepfad bzw. Dateiname für die erzeugten GIFs. Bei keiner Angabe gleicher Dateiname wie die Quelle, mit Suffix _meme und Endung .gif.
+
+##Hinweise
+##--------
+Interaktiver Modus
+    Ohne Dateiangabe startet ein geführter Dialog:
+    • Dateiauswahl über ein Menü (unterstützte Video-/GIF-Formate)
+    • Optional: Frage, ob die GIF-Auflösung/Bildrate reduziert werden soll, um Speicherplatz zu sparen
+    • Optional: Abfrage von Text oben/unten (leere Eingabe = Zeile wird übersprungen)
+    • Auswahl der Schriftgrößen für obere/untere Zeile über definierte Profile
+
+Automatische Qualitätsanpassung
+    Eine interne „pre-chain“ prüft die Quelle (Breite, Bildrate) und setzt nur dann Filter, wenn es sinnvoll ist:
+    • fps > 20 → Begrenzung auf 20 FPS
+    • Breite > 480 px → Skalierung auf max. 480 px Breite (Höhe passend skaliert)
+    Diese Begrenzung wird durch --keep-quality deaktiviert.
+
+Palette-Workflow
+    Die GIF-Erstellung nutzt eine Palette-Pipeline für bessere Qualität:
+    • Quelle wird gefiltert (Pre-Chain + drawtext), gespaltet und eine Palette generiert.
+    • Anschließend wird die Palette mit „paletteuse“ (dither=sierra2_4a) angewandt.
+    Dadurch werden Banding und Farbartefakte reduziert und die Dateigröße optimiert.
+
+Rückgabewerte
+    0 Erfolg; ≠0 Fehler (z. B. fehlende Eingabedatei, ffmpeg-Problem oder abgebrochene Operation).
+
+##Beispiele
+##---------
+Einfaches Meme-GIF aus einem Video mit Text oben und unten:
+video gif clip.mp4 --text-top "WENN PYTHON ENDLICH LÄUFT" --text-bottom "UND DER BUG WAR NUR EIN KOMMA"
+
+Nur untere Textzeile, mit nahezu Originalqualität:
+video gif scene.webm --text-bottom "NO COMPROMISES" --keep-quality
+
+Animation aus mehreren Dateien, automatisch benannt:
+video gif input%.mp4 --text-top "BINGE WATCHING" --text-bottom "NUR NOCH EINE FOLGE…" -o meme%.gif
+
+Kurzes GIF ohne Text, mit Standard-Qualitätsbegrenzung:
+video gif reaction.mov

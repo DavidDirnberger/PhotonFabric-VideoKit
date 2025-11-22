@@ -1,0 +1,125 @@
+###PhotonFabric VideoKit – Overview (EN)
+
+##Short description
+##----------------
+PhotonFabric – VideoKit is a modular toolbox built around ffmpeg (and optional AI models) that splits typical video workflows into individual commands: converting, compressing, trimming, scaling, cropping/padding, interpolating, turning image sequences into videos, merging, extracting, classic filter-based enhancement, AI upscaling, GIF creation and metadata editing. All commands support an interactive mode (without file arguments) and a CLI/batch mode (with file arguments and optional flags). Where possible, container properties, streams (audio, subtitles), chapters, metadata and thumbnails are preserved or sensibly re-applied. Alpha channels are preserved as long as the chosen codec/container combination supports them.
+
+##Usage
+##------
+video <COMMAND> [FILES] [OPTIONS]
+
+Without file arguments, a command starts a guided, interactive workflow (menus, prompts, confirmations). With file arguments and optional parameters, all commands can be executed automatically in CLI/batch mode.
+
+##Options & Flags
+##----------------
+
+#COMMAND: # <subcommand> (short description)
+         Each subcommand has its own info file with detailed options and examples. With video <command> --help you can inspect all flags for each module.
+
+#convert: # Universal video conversion
+         Converts videos with ffmpeg. Format, resolution, framerate and codec can be chosen explicitly for conversion; in addition, a preset can be selected that controls quality level and encoding speed.
+
+#compress: # Quality-based compression
+          Compresses videos with ffmpeg using a simple quality value (0–100).
+
+#trim: # Cutting/trimming clips
+      Cuts/trims videos with ffmpeg based on start+length or start+end. Either fast [lossless/GOP-based (stream copy)] or precise [re-encode, frame-accurate, with optional quality preset].
+
+#scale: # Scaling to target resolutions
+       Scales videos to a target resolution. By default, the aspect ratio is preserved but can also be freely chosen.
+
+#croppad: # Crop & pad
+         Crops or pads (adds borders) to a target resolution – per axis: on each axis, the image is cropped if target < source, and padded if target > source. Offsets can shift the crop window or the position on the target canvas. For sources with alpha, transparent padding is used.
+
+#interpolate: # FPS increase via motion interpolation
+             Increases (or normalizes) the frame rate of a video via motion interpolation (ffmpeg minterpolate). The target frame rate can be specified as a factor relative to the original FPS (e.g. 2x) or as an absolute FPS value (e.g. 60, 30000/1001).
+
+#img2vid: # Image sequence → video
+         Creates a video from an image sequence using ffmpeg. The image order is naturally sorted (…1, …2, …10). The frame rate can be specified as FPS (e.g. 25, 24000/1001), as a duration per image (e.g. 2s, 150ms) or as a total duration. Format, resolution, codec and preset can be chosen explicitly.
+
+#merge: # Merging streams
+       Combines videos with additional videos and/or audio tracks and/or subtitle files. Resolution, unification strategy, offsets and optional extension (“extend”) can be chosen explicitly. Existing streams are preserved losslessly where possible; required re-encodes are done in a container-/codec-compliant way. The first cover/thumbnail found in the inputs is extracted and embedded into the output video.
+
+#extract: # Extracting content
+         Extracts specific content from video files:
+         - Audio tracks (as MP3)
+         - Subtitle tracks (as text or image subs)
+         - Individual still frames
+         - “Video-only” versions without audio/subtitles
+
+#enhance: # Classic video filters
+         Enhances videos with ffmpeg filters. Supports stabilization, denoising, and color/brightness correction via presets or freely configurable individual parameters. Container and codec selection is handled automatically by the existing encoding logic, and audio streams are carried over appropriately.
+
+#aienhance: # AI upscaling & enhancement
+           Scales and enhances videos using AI models (Real-ESRGAN/RealCUGAN). Model selection, scaling factor, denoising, face enhancement, TTA and worker priority can be controlled explicitly. Container and codec selection is handled automatically by the existing encoding logic; all relevant streams (audio, subtitles, attachments, chapters, metadata) are remuxed back into the upscaled result where possible.
+
+#gif: # GIF creation & meme text
+     Creates animated GIFs from short videos or existing GIFs and can optionally render classic meme text at the top and/or bottom (white text with black outline, Impact-like font). By default, resolution and frame rate are moderately limited to improve file size and compatibility; with a flag, original quality can be preserved as far as possible.
+
+#metadata: # Read & edit metadata
+          Reads and edits container/stream metadata of video files. Shows technical information (container, codec, resolution, color metadata, audio/subtitle streams, chapters). Lists and groups metadata into protected, editable and other tags. Allows setting, deleting and querying editable tags (e.g. title, artist, production_year, genre, …). Supports virtual, read-only fields (e.g. resolution, duration, audio_codec, alpha_channel, chapters, …). Can display, set or delete embedded thumbnails.
+
+##Notes
+##--------
+
+Interactive commands
+    All commands start in interactive mode when called without filenames:
+    File selection via menus
+    Guided prompts for key parameters (quality, resolution, codec/format, time window, FPS, AI model, …)
+    Summary of all settings before ffmpeg/AI is started
+
+CLI/batch mode
+    With explicit file arguments and optional flags, all commands run non-interactively:
+    Multiple files can be processed via placeholder (%) or shell globs (*.mkv)
+    Return codes are suitable for evaluation in shell scripts
+    Status and progress are reported via the tool’s own console output
+
+Shared characteristics
+    ffmpeg is invoked as robustly as possible (appropriate filters, safe stream mappings, sensible defaults).
+    Where technically feasible, thumbnails, chapters and metadata are handled consistently across commands.
+    Alpha/transparency support is respected when container/codec combinations allow it.
+    AI features (aienhance) use a dedicated worker logic with optional GPU support.
+
+Return codes
+    0 success; ≠0 error (e.g. missing file, ffmpeg/model error, aborted operation).
+
+Filename placeholders
+    The % character is used as a placeholder for numbered files and is interpreted consistently by all commands:
+    file%.mkv → file001.mkv, file6.mkv, file030.mkv, …
+
+##Examples
+##---------
+Typical workflows – selection:
+
+Conversion for web:
+video convert film.avi --format mp4 --preset web --resolution 1080p --framerate 30
+
+Fast lossless cut of an intro:
+video trim episode01.mkv --start 00:00:05 --end 00:00:35
+
+Scaling an entire season to 720p:
+video scale staffel1_ep%.mkv --resolution 720p
+
+FPS interpolation to 60 FPS:
+video interpolate gameplay.mp4 --factor 60
+
+Image sequence to video (25 FPS):
+video img2vid frames/frame_%.png --factor 25 --format mkv
+
+Merging two videos and an external subtitle file:
+video merge film.mkv bonus.mkv subs_de.srt
+
+Extract all audio streams & English subtitles from multiple files:
+video extract film%.mkv --audio --subtitle en
+
+Reduce light noise and stabilize:
+video enhance vacation.mp4 --preset realistic
+
+Upscale a series to 4K via AI:
+video aienhance ep%.mkv --model realesr-general-x4v3 --scale 2 --priority medium
+
+Create a meme GIF from a short clip:
+video gif clip.mp4 --text-top "WHEN CODE WORKS" -ft grande --text-bottom "AND YOU DON’T KNOW WHY" -fb small
+
+Set metadata for a full season:
+video metadata ep%.mkv --show "Meine Serie" --season_number 1 --production_year 2024

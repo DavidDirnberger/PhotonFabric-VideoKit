@@ -1,0 +1,35 @@
+name: CI
+on:
+  push:
+  pull_request:
+
+jobs:
+  lint-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          pip install ruff black
+
+      - name: Lint (ruff)
+        run: ruff check .
+
+      - name: Format check (black)
+        run: black --check .
+
+      - name: Import compiles (syntax sanity)
+        run: python -m compileall -q .
+
+      - name: Shellcheck install.sh
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck
+          shellcheck install.sh || true   # noch nicht blockierend

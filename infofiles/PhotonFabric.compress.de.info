@@ -1,0 +1,67 @@
+###PhotonFabric VideoKit – compress (DE)
+
+##Kurzbeschreibung
+##----------------
+Komprimiert Videos mit ffmpeg über eine einfache Qualitätsangabe (0–100). Unterstützt interaktiven Modus (ohne Dateiangabe) und Batch-Modus (mit Dateiangabe und optionalen Flags). Behält Container und (in der Regel) den Quell-Codec bei, inklusive Cover/Thumbnail-Übernahme.
+
+##Aufruf
+##------
+video compress [DATEIEN] [--quality PROZENT] [--output PFAD]
+
+##Optionen & Flags
+##----------------
+#--quality, -q: # <int> (default=40, range=0–100)
+               Visuelle Qualitätsstufe in Prozent. Intern auf ffmpeg-CRF (Constant Rate Factor) abgebildet.
+               Höher = bessere Qualität, größere Datei; niedriger = stärkere Kompression, kleinere Datei.
+               Audio-Policy je nach Qualität (nur wenn Neucodierung sinnvoll ist):
+               §≥25 %§ Audio copy, falls AAC/Opus/MP3 ≤192 kbit/s; sonst AAC 192 kbit/s
+               §5–24 %§ Audio copy, falls AAC/Opus/MP3 ≤128 kbit/s; sonst AAC 128 kbit/s
+               §<5 %§ Audio copy, falls AAC/Opus/MP3 ≤96 kbit/s;  sonst AAC 96 kbit/s
+
+#--output, -o: # <string> (default=leer)
+              Ausgabepfad/Datei. Ohne Angabe: gleicher Dateiname wie Quelle mit suffix.
+              Suffix = _compressed_Q{QUALITY}, Extension = Quell-Container.
+
+##Hinweise
+##--------
+Interaktiver Modus
+Zeigt eine Parameterübersicht (Dateien/Format/Codec/Quality/CRF) und optional eine Vorschau (Mittel-Frame) an, wenn das Terminal dies zulässt.
+
+Container/Codec
+Der Container der Quelle wird beibehalten (z. B. .mp4, .mkv, .webm).
+Der Video-Codec bleibt i. d. R. unverändert; falls der Container eine andere CRF-fähige Codec-Wahl erfordert, wird automatisch ein passender Codec gewählt (Info-Hinweis im Terminal).
+
+Faststart
+Für MP4/M4V wird automatisch „faststart“ gesetzt (schnelleres Streaming/Abspielen).
+
+Kurzclip-Tuning
+Für sehr kurze Clips (≤ 15 s) wird der Keyframe-Abstand angepasst (-g ≈ 2×FPS), um Seekbarkeit zu verbessern.
+
+Smart-Keep (Größenvergleich)
+Es wird zunächst in ein temporäres Ziel encodiert und die Größe mit der Quelle verglichen.
+Ist die komprimierte Datei ≥ 98 % der Originalgröße, bleibt das Original erhalten (Copy statt Re-encode-Ergebnis).
+
+Cover/Thumbnail
+Vorhandene Thumbnails/Cover (z. B. aus MP4/MKV) werden extrahiert und nach erfolgreicher Kompression wieder eingebettet.
+
+Rückgabewerte
+0 Erfolg; ≠0 Fehler von ffmpeg/Umgebung.
+
+Muster für Dateiserien
+Das %-Zeichen steht als Platzhalter für Nummerierung: file%.mkv ⇒ file001.mkv, file6.mkv, file030.mkv, …
+
+Abhängigkeiten
+ffmpeg, ffprobe (Kitty optional für Bildvorschau)
+
+Hinweis zu bereits stark komprimierten Quellen
+Bei bereits stark komprimierten Videos (z. B. YouTube-Downloads, Screen-Captures) kann Re-Encoding trotz CRF zu ähnlicher oder größerer Dateigröße führen. „Smart-Keep“ verhindert in solchen Fällen unnötige Re-Encodes; für konsistente Größenreduktion eignen sich wenig oder unkomprimierte Quellen.
+
+##Beispiele
+##---------
+video compress film.mp4 --quality 60
+
+video compress clip%.mkv -q 35
+
+video compress input.webm --quality 25 --output "/media/Archive/input_compressed_Q25.webm"
+
+video compress # interaktiv mit Vorschau/Bestätigung in Kitty möglich

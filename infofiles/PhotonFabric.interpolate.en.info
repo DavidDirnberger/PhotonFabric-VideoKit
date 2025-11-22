@@ -1,0 +1,72 @@
+###PhotonFabric VideoKit – interpolate (EN)
+
+##Short Description
+##----------------
+Raises (or normalizes) a video’s frame rate via motion interpolation (ffmpeg minterpolate). Supports interactive mode (without file argument) and batch mode (with file argument and optional flags). The target frame rate can be given as a factor relative to the source FPS (e.g. 2x) or as an absolute FPS (e.g. 60, 30000/1001). Audio/subtitles are mapped sensibly; an existing cover/thumbnail is preserved and re-embedded after processing. For sources with an alpha channel, alpha is carried along as well—provided the container/codec supports it.
+
+##Usage
+##------
+video interpolate [FILES] [--factor FACTOR|FPS] [--quality PRESET] [--output PATH]
+
+##Options & Flags
+##----------------
+
+#--factor, -f: # <string|number> (default=2x)
+              Target frame rate.
+              Inputs: multipliers like 1.5x, 2x or absolute FPS like 60, 59.94, 30000/1001.
+              Notes:
+              • The factor refers to the source FPS (e.g. 25 → 50 with 2x).
+              • Absolute values set the FPS directly (CFR output).
+              • For NTSC-compatible rates, rational inputs are recommended (e.g. 60000/1001 ≈ 59.94).
+
+#--quality, -q: # <string> (default=std)
+               Quality profile for motion interpolation.
+               §std§ Balanced; direct interpolation without additional filters.
+               §hq§  Mild pre-denoising before MV estimation for more stable motion vectors.
+               §max§ Stronger pre-denoising plus gentle sharpening for the cleanest result.
+
+#--output, -o: # <string> (default=empty)
+              Output path/file. If omitted: same base name, suffix interpolated[FPS]fps; container/codec are derived from the source or chosen target container.
+
+##Notes
+##--------
+Interactive mode
+Enter target frame rate as a factor or absolute FPS → select the quality profile.
+
+Motion interpolation
+Uses minterpolate (incl. mi_mode=mci, mc_mode=aobmc, me_mode=bidir, vsbmc=1). Output is CFR with the chosen target FPS.
+
+Alpha/Transparency
+For RGBA sources, color and alpha are interpolated separately and merged again. Requires a container/codec with alpha support (e.g. MKV/MOV, suitable codec).
+
+Streams & metadata
+Video is re-encoded; audio/subtitles are preserved with stable stream mapping. An existing cover/thumbnail is re-embedded after successful interpolation.
+
+Encoder/container
+Source codec is preferred (no cross-codec if possible). The target container is inferred from the output file extension. Many encoders expect even width/height; this is not adjusted automatically.
+
+Artifacts
+With heavy motion, occlusions, strobe lighting, etc., ghosting/wrong vectors may occur. Higher quality profiles typically reduce this at the cost of more compute time.
+
+GPU/Hardware
+Prefers available HW encoders (NVENC/VAAPI/QSV), otherwise falls back to software.
+
+Return codes
+0 success; ≠0 errors from ffmpeg/environment.
+
+Placeholder
+The % sign acts as a numbering placeholder: file%.mkv ⇒ file001.mkv, file6.mkv, file030.mkv, …
+
+##Examples
+##---------
+Double the frame rate (25 → 50 FPS), standard quality:
+video interpolate clip.mp4 --factor 2x
+
+Set to 59.94 FPS (NTSC-compatible), high quality:
+video interpolate input.mov --factor 60000/1001 --quality hq
+
+From 30 → 60 FPS, maximum quality and custom output path:
+video interpolate demo.webm --factor 60 --quality max --output out/demo_60fps.webm
+
+Batch over multiple files (automatic suffix):
+video interpolate clip%.mp4 --factor 50 --quality std

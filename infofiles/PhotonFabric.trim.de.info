@@ -1,0 +1,85 @@
+###PhotonFabric VideoKit – trim (DE)
+
+##Kurzbeschreibung
+##----------------
+Schneidet/trimmt Videos mit ffmpeg anhand Start+Länge oder Start+Ende. Unterstützt interaktiven Modus (ohne Dateiangabe) und Batch-Modus (mit Dateiangabe und optionalen Flags). Zwei Betriebsarten: Schnell (verlustfrei/GOP-basiert, Stream-Copy) und Präzise (Re-Encode, framegenau) mit optionalem Qualitäts-Preset.
+
+##Aufruf
+##------
+video trim [DATEIEN] [--start ZEIT] [--duration ZEIT | --end ZEIT] [--precise] [--quality PRESET] [--output PFAD]
+
+##Optionen & Flags
+##----------------
+Unterstützte Formate: [-]SS[.fff], [-]MM:SS, [-]HH:MM:SS, [-]{PERCENT}%, [-]{PERCENT}p, [-]{PERCENT}P
+Bei vorangestelten '-' wird die angegebene Zeit von der Gesamtdauer abgezogen => -1:20 bei einer Videolänge von 20:00 bedeutet 18:40.
+
+#--start, -s: # <time> (default=0:00)
+             Startzeit des Ausschnitts.
+
+#--duration, -d: # <time> (default=1:00)
+                Länge des Ausschnitts (relativ ab --start).
+
+#--end, -e: # <time> (default=leer)
+           Absolutes Ende des Ausschnitts.
+           Darf nicht zusammen mit --duration genutzt werden (bei beidem hat Dauer Vorrang).
+
+#--precise, -p: # <flag> (default=aus)
+               Aktiviert präzises, framegenaues Trimmen via Re-Encode.
+               Ohne dieses Flag wird schnell/verlustfrei (GOP-basiert) getrimmt und Video/Audio/Untertitel per Stream-Copy übernommen.
+
+#--quality, -q: # <string> (default=cinema, nur bei --precise)
+               Qualitäts-/Geschwindigkeitsprofil für den präzisen Modus.
+               §messenger360p§ sehr schnell, niedrige Qualität (klein)
+               §messenger720p§ schnell, kompakt
+               §web§ schnell, web-tauglich
+               §casual§ ausgewogen
+               §cinema§ hohe Qualität
+               §studio§ sehr hohe Qualität
+               §ultra§ maximale visuelle Qualität
+               §lossless§ mathematisch verlustfrei (sehr groß, langsam)
+
+#--output, -o: # <string> (default=leer)
+              Ausgabepfad/Datei. Ohne Angabe: gleicher Dateiname, Suffix _trimmed, Extension = Quell-Container (bzw. kompatibler Container).
+
+##Hinweise
+##--------
+Interaktiver Modus
+Fragt Startzeit und entweder Dauer oder Endzeit ab, zeigt eine Vorschau (sofern möglich) und lässt zwischen Schnell (lossless) und Präzise (re-encode) wählen; im präzisen Modus kann ein Qualitäts-Preset gewählt werden.
+
+Modi & Genauigkeit
+Schnell (verlustfrei/GOP): sehr schnell, kopiert Video/Audio/Untertitel (Bitstream-Copy). Schnittpunkte liegen auf Keyframes; Start/Ende können deshalb leicht vom exakten Frame abweichen.
+Präzise (Re-Encode): framegenau; wählt passenden Codec/Encoder je Container und gewähltem Preset (langsamer).
+
+Stream-Mapping & Untertitel
+Streams werden container-bewusst gemappt. MP4: textbasierte Untertitel werden in mov_text konvertiert; MKV: Untertitel werden kopiert. Video/Audio werden in der Schnell-Methode kopiert (-c:v copy, -c:a copy).
+
+Container/Codec
+Der Quell-Container wird in der Regel beibehalten. Falls ein Codec im Ziel-Container nicht zulässig ist, wird automatisch ein kompatibler Codec gewählt (Info-Hinweis im Terminal).
+
+Faststart
+Für MP4/M4V wird automatisch faststart gesetzt (schnelleres Streaming/Abspielen).
+
+Fallback
+Falls die verlustfreie Copy-Methode fehlschlägt (z. B. problematische Keyframe-Lage), wird automatisch auf einen verlustarmen/lossless Re-Encode mit identischen Parametern zurückgegriffen.
+
+Cover/Thumbnail
+Vorhandene Cover/Thumbnails (z. B. in MP4/MKV) werden extrahiert und nach erfolgreichem Trim wieder eingebettet.
+
+Rückgabewerte
+0 Erfolg; ≠0 Fehler von ffmpeg/Umgebung.
+
+Muster für Dateiserien
+Das % Zeichen steht als Platzhalter für Nummerierung: file%.mkv ⇒ file001.mkv, file6.mkv, file030.mkv, …
+
+Abhängigkeiten
+ffmpeg, ffprobe
+
+##Beispiele
+##---------
+video trim film.mp4 --start 0:30 --duration 20
+
+video trim input.mkv --start 01:00:00 --end 01:05:30 --precise --quality cinema
+
+video trim clip%.mp4 --start 10 --duration 30%
+
+video trim sample.mov --start 2:00 --duration 1:00 --output sample_trim.mov

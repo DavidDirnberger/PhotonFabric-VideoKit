@@ -1,15 +1,48 @@
-# Verzeichnisse
-.vscode/            # Slash = Verzeichnis rekursiv ignorieren
-duration_estimation/
-Real-ESRGAN/
-tmp/
-old/
+# ---- Python
 __pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+*.so
+*.egg-info/
+.dist/
+build/
+dist/
 
+# ---- Envs / Tools
+.venv/
+venv/
+.env
+.env.*
 
-# Dateitypen
-*.mp4
-*.mkv
+# ---- OS/Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# ---- Project-specific
+diagnose.txt
+*.zip
+*.tar.gz
+*.tar
+*.7z
+
+# Local configs
+config.ini
 *.log
-*.env
-*.swp
+logs/
+
+# Sample/Media (vermeide große Dateien im Repo)
+samples/
+media/
+output/
+
+# Caches
+.cache/
+.conda_pkgs/
+.pipcache/
+.torchcache/
+.ncnncache/

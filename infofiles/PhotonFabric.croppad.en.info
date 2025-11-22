@@ -1,0 +1,96 @@
+###PhotonFabric VideoKit – croppad (EN)
+
+##Short description
+##----------------
+Crop or pad to a target resolution – axis-wise: For each axis, the tool crops if target < source, and pads if target > source. Supports interactive mode (without file argument) and batch mode (with file argument and optional flags). Offsets can shift the crop window or the position on the target canvas. The source cover/thumbnail is preserved and re-embedded after processing. For sources with alpha, transparent padding is used.
+
+##Usage
+##------
+video croppad [FILES] [--resolution RES] [--offset X[:Y]] [--offset-x X] [--offset-y Y] [--output PATH]
+
+##Options & Flags
+##----------------
+
+#--resolution, -r: # <string> (default=original)
+                  Target resolution. custom requires input W:H (even values recommended; ≤ source for pure crop; > source leads to padding). Within this module there is no automatic aspect-ratio calculation; you provide exact target dimensions (axis-wise crop/pad).
+                  §original§ Keep original resolution (no action; only metadata/thumbnail re-embed).
+                  §240p§ 426:240 (16:9)
+                  §360p§ 640:360 (16:9)
+                  §480p§ 854:480 (16:9)
+                  §720p§ 1280:720 (16:9)
+                  §1080p§ 1920:1080 (16:9)
+                  §1440p§ 2560:1440 (16:9)
+                  §QHD+§ 3200:1800 (~16:9)
+                  §4K§ 3840:2160 (16:9)
+                  §4K-DCI§ 4096:2160 (17:9)
+                  §8K§ 7680:4320 (16:9)
+                  §8K-DCI§ 8192:4320 (17:9)
+                  §custom§ User-defined (Width:Height). Accepted separators: ':', ',', '/', 'x', 'X', ';', '-', ' '.
+
+#--offset, -off: # <string|int> (default=0[:0])
+                Pixel offset relative to the centered position.
+                Inputs: “X:Y” (e.g., 40:10) or just “X” (Y=0). Allowed separators: 'x', 'X', ':', ',', '/', ';', '|'.
+                Positive values: shift right/down; negative values: left/up (clamped to valid bounds).
+                • During crop, the offset moves the crop window.
+                • During pad, the offset moves the image on the target canvas.
+
+#--offset-x, -x: # <int> (default=0)
+                X offset in pixels (separate).
+
+#--offset-y, -y: # <int> (default=0)
+                Y offset in pixels (separate).
+
+#--output, -o: # <string> (default=empty)
+              Output path/file. If omitted: same filename with suffix _croppad_WxH; container/codec remain compatible with the source and/or chosen target container.
+
+##Notes
+##--------
+Interactive mode
+Step-by-step selection: resolution (incl. custom; original is hidden in the menu) → offsets X and Y (Enter = 0).
+
+Crop/Pad logic (per axis)
+• target < source → crop (per axis).
+• target = source → no change.
+• target > source → padding (per axis).
+Offsets are always applied relative to the centered base position and clamped to valid ranges.
+
+Transparency/alpha
+For sources with an alpha channel, padding uses transparent black (black@0). Otherwise black is used.
+
+Encoder alignment
+Many encoders require even width/height (divisible by 2/8/16). croppad does not adjust this automatically. Prefer even target sizes; otherwise the encoder may round internally or fail.
+
+Streams & metadata
+Video is re-encoded; audio/subtitles are mapped sensibly via the plan API. Any existing cover/thumbnail is extracted and re-embedded after a successful run.
+
+Codec/container
+Minimal-invasive: the source codec is preferred (no cross-codec where possible). The target container derives from the output file extension.
+
+GPU/hardware
+Prefers available HW encoders (e.g., NVENC/VAAPI/QSV); otherwise falls back to software.
+
+Return codes
+0 success; ≠0 errors from ffmpeg/environment.
+
+Placeholders
+The % sign acts as a placeholder for numbering: file%.mkv ⇒ file001.mkv, file6.mkv, file030.mkv, …
+
+##Examples
+##---------
+Square crop from 16:9, centered:
+video croppad clip.mp4 --resolution 1080x1080
+
+Square crop, shifted upward (weight content higher):
+video croppad clip.mp4 --resolution 1080x1080 --offset 0:-120
+
+Letterboxing (padding) from 1920×800 to Full HD, slightly shifted upward:
+video croppad film.mkv --resolution 1920x1080 --offset 0:-20
+
+Pad sideways: move content to the left (negative X offset):
+video croppad sample.mov --resolution 2560x1440 --offset -100:0
+
+Use a named resolution (720p), set offsets separately:
+video croppad input.webm --resolution 720p --offset-x 24 --offset-y -16
+
+No action (only metadata/thumbnail re-embed), keep original:
+video croppad raw.mov --resolution original

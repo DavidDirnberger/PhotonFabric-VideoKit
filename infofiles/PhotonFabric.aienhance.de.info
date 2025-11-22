@@ -1,0 +1,113 @@
+###PhotonFabric VideoKit – aienhance (DE)
+
+##Kurzbeschreibung
+##----------------
+Skaliert und verbessert Videos mit KI-Modellen (Real-ESRGAN/RealCUGAN). Unterstützt interaktiven Modus (ohne Dateiangabe) und CLI-/Batch-Modus (mit Dateiangabe und optionalen Flags). Modellwahl, Skalierungsfaktor, Rauschreduzierung, Gesichtsverbesserung, TTA und Worker-Priorität können gezielt gesteuert werden. Container- und Codecwahl erfolgt automatisch über die vorhandene Encoding-Logik; alle relevanten Streams (Audio, Untertitel, Attachments, Kapitel, Metadaten) werden nach dem Upscaling per Remux – soweit möglich – wieder übernommen.
+
+##Aufruf
+##------
+video ai-enhance [DATEIEN] [--aimodel MODELL] [--scale FAKTOR] [--denoise STÄRKE] [--noise-level LEVEL] [--face-enhance] [--tta] [--blend] [--blend-opacity OPACITY] [--priority PROFIL] [--chunk N] [--output PFAD]
+
+##Optionen & Flags
+##----------------
+
+#--aimodel, -am: # <string> (default=realesr-general-x4v3)
+                Auswahl des KI-Modell. Ohne Angabe wird ein sinnvolles Standardmodell gewählt (z. B. realesr-general-x4v3, falls verfügbar).
+                §realesr-general-x4v3§ 4× Allround (Foto/Video, Streams, Screencasts) – Standardmodell für gemischtes Realmaterial; vergleichsweise ressourcenschonendes 'tiny'-Modell mit regelbarer Entrauschung. Gut geeignet für längere Videos und Mittelklasse-GPUs als Default. Denoise Wert zwischen 0 (keine Glättung, Details und Körnung werden beibehalten) und 1 (maximale Glättung). Der Upscaling-Faktor kann frei zwischen 1.0 und 4.0 gewählt werden.
+                §RealESRGAN_x4plus§ 4× klassisches Foto/Video-Modell (large) – sehr detailstark für hochwertige Real-Videos; deutlich ressourcenintensiver als realesr-general-x4v3. Der Upscaling-Faktor kann frei zwischen 1.0 und 4.0 gewählt werden.
+                §RealESRGAN_x2plus§ 2× Foto/Video – moderates Upscaling mit klarer Schärfeverbesserung bei deutlich geringerem Ressourcenbedarf als bei den 4×-Modellen. Der Upscaling-Faktor kann frei zwischen 1.0 und 2.0 gewählt werden.
+                §RealESRGAN_x4plus_anime_6B§ 4× Anime/Line-Art (large) – sehr detailreiches Modell für hochwertige Animes; liefert extrem scharfe Kanten, ist aber stark VRAM- und rechenintensiv. Der Upscaling-Faktor kann frei zwischen 1.0 und 4.0 gewählt werden.
+                §realesr-animevideov3§ 2×/3×/4× Anime-Video v3 (tiny) – sehr stabil auf komprimiertem Material und vergleichsweise ressourcenschonend, ideal für längere Videos. Nur diskrete Werte für den Upscaling-Faktor möglich 2×/3×/4×.
+                §realcugan-se§ 2×/3×/4× Anime/Line-Art (SE) – konservatives, stabiles RealCUGAN-Modell mit wählbaren Rauschprofilen; gut für allgemeine Anime-Upscales bei mittlerem Ressourcenbedarf. Nur diskrete Werte für den Upscaling-Faktor möglich 2×/3×/4x.
+                §realcugan-pro§ 2×/3× Anime (PRO) – aggressiveres RealCUGAN-Modell mit starker Detail- und Kantenbetonung für hochwertige Anime-Quellen; mittlerer bis hoher Ressourcenbedarf, kann Artefakte schwacher Quellen verstärken. Nur diskrete Werte für den Upscaling-Faktor möglich 2×/3x.
+                §realcugan-nose§ 2× Anime (NOSE) – alternative RealCUGAN-Variante mit feinen Kanten für leichtes Upscaling; nur 2×-Scale und damit meist etwas ressourcenschonender als 3×/4×-Modelle.
+
+#--scale, -s: # <float> (default=modellabhängig)
+             Upscaling-Faktor (Outscale). Wird bei „arbitrary_outscale“-Modellen als freier Skalierungsfaktor verwendet, sonst aus der Modell-Konfiguration übernommen (diskrete Werte wie 2×, 3×, 4×).
+
+#--denoise, -d: # <float> (0.0–1.0, default=0.4)
+               Kontinuierliche Denoise-Stärke, nur für das realesr-general-x4v3 Modell.
+               §0.0§ Kein zusätzliches Denoising durch das Modell.
+               §0.3–0.6§ Moderate Rauschreduzierung (empfohlener Bereich).
+               §1.0§ Maximale Modell-Denoise-Stärke; kann feine Details sichtbar glätten.
+
+#--noise-level, -nl: # <int> (default=modellabhängig)
+                    Diskreter Noise-Level (RealCUGAN & Modelle mit Levels).
+                    Zulässige Werte sind modellabhängig (z. B. -1, 0, 1, 2, 3); ungültige Werte werden abgewiesen.
+                    Typische Bedeutung:
+                    §-1§ Denoise aus.
+                    §0§ Leichte Rauschreduzierung.
+                    §1–3§ Zunehmend stärkere Rauschreduzierung.
+
+#--face-enhance, -fe: # (default=False)
+                     Aktiviert die KI-Gesichtsverbesserung (Face Enhance), sofern vom Modell/Backend unterstützt. Gesichter werden gezielt geschärft und rekonstruiert; nicht alle Modelle/Backends unterstützen diese Option.
+
+#--tta, -t: # (default=False)
+       Test-Time Augmentation (TTA). Führt mehrere Durchläufe mit Flip/Rotation aus und mittelt das Ergebnis. Vorteile: Etwas stabilere Detailwiedergabe, weniger Artefakte. Nachteile: Deutlich längere Rechenzeit (Faktor ~2–8, abhängig vom Backend).
+
+#--blend, -b: # (default=False)
+             Blending mit dem Originalvideo. Das KI-upgescalte Video wird mit einer aufgelösten Variante des Originalvideos überlagert (Blend), um einen weniger „überscharfen“ Look zu erreichen.
+
+#--blend-opacity, -bo: # <float> (0.0–1.0, default=0.85)
+                      Mischverhältnis beim Blending, wenn --blend aktiv ist.
+                      §0.0§ Nur Originalbild (kein Upscale sichtbar).
+                      §0.5§ Gleich starke Mischung aus Original und Upscale.
+                      §0.85§ Schwerpunkt auf Upscale, leichte Beimischung des Originals (empfohlen).
+                      §1.0§ Reines Upscale ohne Blending.
+
+#--priority, -pr: # <string> (default=auto)
+                 Steuert das Worker-Profil für parallele Verarbeitung (Pool/Worker-Anzahl).
+                 §auto§ Automatische Wahl basierend auf VRAM, Modell, Tiles und Auflösung (empfohlen).
+                 §max§ Aggressive Nutzung der verfügbaren Ressourcen → maximale Geschwindigkeit, höhere GPU-Last.
+                 §medium§ Reduzierte Parallelität, guter Kompromiss aus Auslastung und Stabilität.
+                 §minimal§ Sehr konservativ (wenige Worker), gut für knappe Ressourcen oder Instabilitäten.
+                 §no_parallelisation§ Keine Parallelisierung (serieller Pfad, maximal robust, langsam).
+
+#--chunk, -ch: # <int> (default=auto)
+              Anzahl Frames pro Chunk (Segmentgröße). Ohne Angabe wird die Chunk-Größe dynamisch aus freiem Speicher, Auflösung, Upscale-Faktor und Gesamt-Framezahl berechnet.
+              Kleinere Werte → Weniger RAM/VRAM-Bedarf pro Schritt, dafür mehr Einzelchuncks.
+              Größere Werte → Weniger Segmentwechsel, dafür höhere Speicherlast.
+
+#--force-overwrite, -fo: # (default=False)
+                       Überschreibt existierende Zieldateien ohne Rückfrage. Ohne dieses Flag wird versucht, bestehende Dateien zu schützen oder alternative Suffixe zu verwenden (abhängig von der globalen Logik).
+
+#--output, -o: # <string> (default=leer)
+              Ausgabepfad/Datei. Ohne Angabe wird der Ausgabename vom Quellnamen abgeleitet: <name>_upscaled.ext Standard-Suffix für das Endergebnis. Bei mehreren Dateien bleibt der Output im gleichen Verzeichnis; Dateinamen werden je Quelle individuell angepasst.
+
+##Hinweise
+##--------
+
+Modelle & Backends
+       Unterstützt PyTorch- und NCNN-Backends; die tatsächliche Auswahl hängt von System, Installation und Modell-Kapazitäten ab. Für RealESRGAN-Modelle wird bevorzugt PyTorch mit CUDA/MPS genutzt, sofern verfügbar. RealCUGAN-Modelle verwenden typischerweise den NCNN-Backend (realcugan-ncnn-vulkan). Modelle ohne lauffähigen Backend werden automatisch herausgefiltert.
+
+Denoising (Strength vs. Levels)
+       Modelle mit „Strength“-Denoise nutzen --denoise im kontinuierlichen Bereich 0.0–1.0; intern wird dieser Wert auf modellabhängige Skalen abgebildet. Modelle mit „Noise-Levels“ (z. B. RealCUGAN) nutzen diskrete Stufen via --noise-level; ungültige Level werden abgelehnt. In beiden Fällen gilt: Höhere Denoise-Werte reduzieren Rauschen stärker, können aber feine Details und Texturen glätten.
+
+Chunks & Speicher
+       Die Verarbeitung erfolgt segmentiert (Chunks), um Speicherbedarf kalkulierbar zu halten. Standardmäßig wird CHUNK automatisch aus freiem Platz, Auflösung und Upscale-Faktor berechnet; Bei sehr großen oder sehr langen Videos können mehr Chunks erzeugt werden; der Fortschritt wird chunkweise angezeigt.
+
+Encoding, Remux & Streams
+       Zunächst werden aus den KI-upgescalten PNG-Frames videoseitige Segmente encodiert (Video-only), ohne harte Container/Codec-Vorgaben. Anschließend werden diese Segmente concateniert (CFR) und zum finalen Container encodiert. In einem separaten Schritt werden alle sinnvoll übernehmbaren Streams aus der Originaldatei (Audio, Untertitel, Attachments, Kapitel, Metadaten) wieder mit dem Upscale-Video remuxt: Erster Versuch: kompletter Streamcopy (Video/Audio/Subs/Attachments/Data). Fallback: Audio-Transkodierung (z. B. zu AAC), Untertitel/Attachments bleiben soweit möglich erhalten. Letzter Fallback: Nur Video + Audio, ohne zusätzliche Streams. Bei Remux-Fehlschlag wird ein Hinweis ausgegeben und das reine Video-only-Ergebnis zurückgegeben.
+
+GPU/Hardware & Worker
+       aienhance nutzt die GPU/Backend-Erkennung für alle KI-Pfade. Torch-Gerät (cuda/mps/cpu) wird in einem Subprozess ermittelt. VRAM-Größe beeinflusst Tile-Größe, Workerzahl und FP32/TF32-Konfiguration.
+
+Abbruch & Cleanup
+       ESC/Strg+C lösen einen globalen Cancel aus; laufende Subprozesse werden beendet. Temporäre Verzeichnisse/Frames werden am Ende – auch bei Abbruch – bestmöglich aufgeräumt.
+
+Rückgabewerte
+       0 Erfolg; ≠0 Fehler von ffmpeg/KI-Backends/Umgebung oder Abbruch durch den Benutzer bzw. fehlgeschlagene Segmente.
+
+Platzhalter für Dateiserien
+       Wie bei anderen Kommandos steht das %-Zeichen als Platzhalter für Nummerierung:
+       file%.mkv ⇒ file001.mkv, file6.mkv, file030.mkv, …
+
+##Beispiele
+##---------
+video aienhance film.mkv --aimodel realesr-general-x4v3 --scale 2 --denoise 0.4
+
+video aienhance anime_clip%.mp4 --aimodel realesr-animevideov3 --tta --priority max
+
+video aienhance noisy_master.mkv --aimodel realcugan-x2 --noise-level 2 --blend --blend-opacity 0.75
+
+video aienhance master.mkv --aimodel realesr-general-x4v3 --priority medium --output master_upscaled.mkv

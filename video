@@ -1,0 +1,124 @@
+#!/usr/bin/env bash
+# video — robust launcher with optional tracing (VM_TRACE=1)
+set -euo pipefail
+# Argcomplete: temporäre Dateien zur sicheren Übergabe (robust bei langen/komplexen Args)
+export _ARGCOMPLETE_USE_TEMPFILES=1
+
+[[ "${VM_TRACE:-0}" == "1" ]] && set -x
+
+die(){ echo -e "\e[31m[video]\e[0m $*" >&2; exit 1; }
+note(){ echo -e "\e[36m[video]\e[0m $*"; }
+
+# Resolve self & base (fallback ohne readlink -f)
+if SELF="$(readlink -f "${BASH_SOURCE[0]}" 2>/dev/null)"; then :; else SELF="${BASH_SOURCE[0]}"; fi
+BASE="$(cd "$(dirname "$SELF")" && pwd)"
+
+# ── Feste Pfade deiner Installation (vom Installer gesetzt) ─────────────────
+CONDA_DIR="APP_PATH_PLACEHOLDER/miniconda"
+ENV_NAME="ENV_NAME_PLACEHOLDER"
+APP_PATH="APP_PATH_PLACEHOLDER/videoManager.py"
+
+ENV_BIN="$CONDA_DIR/envs/$ENV_NAME/bin"
+ENV_LIB="$CONDA_DIR/envs/$ENV_NAME/lib"
+
+# --- argcomplete fast-path: keine Ausgaben, nur Python starten ---------------
+if [[ -n "${_ARGCOMPLETE:-}" ]]; then
+  # Fallback-Python, falls die Conda-Env (ENV_BIN/python) noch nicht existiert:
+  if [[ -x "$CONDA_DIR/envs/$ENV_NAME/bin/python" ]]; then
+    PY="$CONDA_DIR/envs/$ENV_NAME/bin/python"
+  else
+    PY="$(command -v python3 || command -v python)"
+  fi
+  exec "$PY" -X faulthandler "$APP_PATH" "$@"
+fi
+
+# ── Sanity ──────────────────────────────────────────────────────────────────
+[[ -x "$ENV_BIN/python" ]] || die "Python fehlt: $ENV_BIN/python"
+[[ -f "$APP_PATH"       ]] || die "App fehlt: $APP_PATH"
+
+# ── ffmpeg: bevorzuge System-ffmpeg mit vid.stab ────────────────────────────
+if command -v /usr/bin/ffmpeg >/dev/null; then
+  if /usr/bin/ffmpeg -hide_banner -filters 2>/dev/null | grep -qE 'vidstab(transform|detect)'; then
+    export PATH="/usr/bin:$ENV_BIN:$PATH"
+  else
+    export PATH="$ENV_BIN:$PATH"
+  fi
+else
+  export PATH="$ENV_BIN:$PATH"
+fi
+
+# ── Library-Pfade (Conda + NVIDIA CUDA Libs aus site-packages) ──────────────
+export LD_LIBRARY_PATH="$ENV_LIB:${LD_LIBRARY_PATH:-}"
+NVIDIA_LIB_PATHS="$("$ENV_BIN/python" - <<'PY'
+import sysconfig, glob, os
+site = sysconfig.get_paths().get("purelib", "")
+for root in glob.glob(os.path.join(site, "nvidia", "**", "lib"), recursive=True):
+    if os.path.isdir(root):
+        print(root)
+PY
+)"
+if [ -n "$NVIDIA_LIB_PATHS" ]; then
+  while IFS= read -r p; do
+    [ -d "$p" ] && LD_LIBRARY_PATH="$p:${LD_LIBRARY_PATH:-}"
+  done <<< "$NVIDIA_LIB_PATHS"
+  export LD_LIBRARY_PATH
+fi
+
+# ── NCNN-Binaries in PATH, falls vorhanden ──────────────────────────────────
+if [ -x "$ENV_BIN/realesrgan-ncnn-vulkan" ]; then export PATH="$ENV_BIN:$PATH"; fi
+if [ -x "$ENV_BIN/realcugan-ncnn-vulkan" ]; then export PATH="$ENV_BIN:$PATH"; fi
+
+# ── GPU-Hinweis: FP32 auf älteren GPUs (CC < 7.0) ───────────────────────────
+if command -v nvidia-smi >/dev/null 2>&1; then
+  cc=$(nvidia-smi --query-gpu=compute_cap --format=csv,noheader 2>/dev/null | head -n1 | awk -F. '{printf "%d%02d", $1, $2}')
+  if [ -z "${ESRGAN_FORCE_FP32:-}" ] && [ -n "$cc" ] && [ "$cc" -lt 700 ]; then export ESRGAN_FORCE_FP32=1; fi
+fi
+
+# ── Basis & Default-Modelle (nur setzen, wenn nicht vorhanden) ──────────────
+export VM_BASE="$BASE"
+if [ -z "${ESRGAN_DEFAULT_MODEL_PATH:-}" ] || [ ! -f "${ESRGAN_DEFAULT_MODEL_PATH:-/dev/null}" ]; then
+  while IFS=: read -r p n; do
+    if [ -f "$p" ]; then export ESRGAN_DEFAULT_MODEL_PATH="$p" ESRGAN_DEFAULT_MODEL_NAME="$n"; break; fi
+  done <<'EOFMODELS'
+"$VM_BASE/real-esrgan/weights/realesr-general-x4v3.pth":realesr-general-x4v3
+"$VM_BASE/real-esrgan/weights/RealESRGAN_x4plus.pth":RealESRGAN_x4plus
+"$VM_BASE/real-esrgan/weights/RealESRGAN_x4plus_anime_6B.pth":RealESRGAN_x4plus_anime_6B
+"$VM_BASE/real-esrgan/weights/RealESRGAN_x2plus.pth":RealESRGAN_x2plus
+"$VM_BASE/weights/realesr-animevideov3.pth":realesr-animevideov3
+EOFMODELS
+fi
+if [ -z "${REALESRGAN_NCNN_MODELS_DIR:-}" ]; then
+  for d in "$VM_BASE/realesrgan-ncnn-vulkan/models" "$VM_BASE/realesrgan-ncnn-vulkan" "$CONDA_DIR/envs/$ENV_NAME/share/realesrgan-ncnn-vulkan/models"; do
+    [ -d "$d" ] && export REALESRGAN_NCNN_MODELS_DIR="$d" && break
+  done
+fi
+if [ -z "${REALCUGAN_MODELS_DIR:-}" ]; then
+  for d in "$VM_BASE/realcugan-ncnn-vulkan/models" "$VM_BASE/realcugan-ncnn-vulkan" "$CONDA_DIR/envs/$ENV_NAME/share/realcugan-ncnn-vulkan/models"; do
+    [ -d "$d" ] && export REALCUGAN_MODELS_DIR="$d" && break
+  done
+fi
+
+# ── Python-Umgebungs-Hygiene ────────────────────────────────────────────────
+export PYTHONUNBUFFERED=1
+export PYTHONDONTWRITEBYTECODE=1     # keine __pycache__-Flut
+export PYTHONNOUSERSITE=1            # ignoriere User-Site-Pakete (mehr Hermetik)
+export PYTORCH_CUDA_ALLOC_CONF="${PYTORCH_CUDA_ALLOC_CONF:-max_split_size_mb:256,garbage_collection_threshold:0.8}"
+
+
+# Dein Projekt-Root für absolute/rel. Imports – genügt, .pth ist NICHT nötig
+export PYTHONPATH="$BASE:${PYTHONPATH:-}"
+
+
+# ── Mini-Banner (nur bei Trace) ─────────────────────────────────────────────
+if [ -t 1 ] && [ "${VM_TRACE:-0}" != "0" ]; then
+  note "Launching: $ENV_BIN/python $APP_PATH $*"
+  "$ENV_BIN/python" - <<'PY'
+import sys, sysconfig, os
+print("[video] python:", sys.version.split()[0])
+print("[video] site  :", sysconfig.get_paths().get("purelib"))
+print("[video] cwd   :", os.getcwd())
+PY
+fi
+
+# ── Start ───────────────────────────────────────────────────────────────────
+exec "$ENV_BIN/python" -X faulthandler "$APP_PATH" "$@"

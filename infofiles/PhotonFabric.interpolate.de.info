@@ -1,0 +1,72 @@
+###PhotonFabric VideoKit – interpolate (DE)
+
+##Kurzbeschreibung
+##----------------
+Erhöht (oder normiert) die Bildrate eines Videos per Bewegungsinterpolation (ffmpeg minterpolate). Unterstützt interaktiven Modus (ohne Dateiangabe) und Batch-Modus (mit Dateiangabe und optionalen Flags). Zielbildrate kann als Faktor zur Original-FPS (z. B. 2x) oder als absolute FPS (z. B. 60, 30000/1001) angegeben werden. Audio/Untertitel werden sinnvoll gemappt; vorhandenes Cover/Thumbnail wird erhalten und nach dem Vorgang wieder eingebettet. Bei Quellen mit Alphakanal wird Alpha – sofern Container/Codec es erlauben – mitgeführt.
+
+##Aufruf
+##------
+video interpolate [DATEIEN] [--factor FAKTOR|FPS] [--quality PRESET] [--output PFAD]
+
+##Optionen & Flags
+##----------------
+
+#--factor, -f: # <string|number> (default=2x)
+              Zielbildrate.
+              Eingaben: Multiplikator wie 1.5x, 2x oder absolute FPS wie 60, 59.94, 30000/1001.
+              Hinweise:
+              • Faktor bezieht sich auf die Quell-FPS (z. B. 25 → 50 bei 2x).
+              • Absolute Werte setzen die FPS direkt (CFR-Ausgabe).
+              • Für NTSC-kompatible Raten sind rationale Angaben (z. B. 60000/1001 ≈ 59.94) empfohlen.
+
+#--quality, -q: # <string> (default=std)
+               Qualitätsprofil für die Bewegungsinterpolation.
+               §std§ Ausgewogen; direkte Interpolation ohne Zusatzfilter.
+               §hq§ Leichtes Pre-Denoising vor der MV-Schätzung für stabilere Bewegungsvektoren.
+               §max§ Stärkeres Pre-Denoising plus sanftes Nachschärfen für möglichst sauberes Resultat.
+
+#--output, -o: # <string> (default=leer)
+              Ausgabepfad/Datei. Ohne Angabe: gleicher Dateiname, Suffix interpolated[FPS]fps; Container/Codec werden aus Quelle bzw. Zielcontainer abgeleitet.
+
+##Hinweise
+##--------
+Interaktiver Modus
+Eingabe der Zielbildrate als Faktor oder absolute FPS → Auswahl des Qualitätsprofils.
+
+Motion-Interpolation
+Verwendet minterpolate (u. a. mi_mode=mci, mc_mode=aobmc, me_mode=bidir, vsbmc=1). Ausgabe ist CFR mit der gewählten Ziel-FPS.
+
+Alpha/Transparenz
+Bei RGBA-Quellen werden Farb- und Alphakanal getrennt interpoliert und wieder zusammengeführt. Erfordert Container/Codec mit Alpha-Support (z. B. MKV/MOV, geeigneter Codec).
+
+Streams & Metadaten
+Video wird neu encodiert; Audio/Untertitel werden übernommen, Muxing erfolgt mit stabiler Stream-Zuordnung. Vorhandenes Cover/Thumbnail wird nach erfolgreicher Interpolation wieder eingebettet.
+
+Encoder/Container
+Quell-Codec wird bevorzugt (kein Cross-Codec, sofern möglich). Zielcontainer ergibt sich aus der Ausgabedatei-Extension. Viele Encoder erwarten gerade Breite/Höhe; dies wird nicht automatisch angepasst.
+
+Artefakte
+Bei starker Bewegung, Occlusions, Stroboskop-Licht o. Ä. können Ghosting/Fehlvektoren auftreten. Höhere Qualitätsprofile reduzieren dies typischerweise, erhöhen aber die Rechenzeit.
+
+GPU/Hardware
+Bevorzugt verfügbare HW-Encoder (NVENC/VAAPI/QSV), sonst Software-Fallback.
+
+Rückgabewerte
+0 Erfolg; ≠0 Fehler von ffmpeg/Umgebung.
+
+Platzhalter
+Das %-Zeichen steht als Platzhalter für Nummerierung: file%.mkv ⇒ file001.mkv, file6.mkv, file030.mkv, …
+
+##Beispiele
+##---------
+Verdoppeln der Bildrate (25 → 50 FPS), Standard-Qualität:
+video interpolate clip.mp4 --factor 2x
+
+Auf 59.94 FPS setzen (NTSC-kompatibel), hohe Qualität:
+video interpolate input.mov --factor 60000/1001 --quality hq
+
+Von 30 → 60 FPS, maximale Qualität und Ausgabepfad setzen:
+video interpolate demo.webm --factor 60 --quality max --output out/demo_60fps.webm
+
+Batch über mehrere Dateien (automatisches Suffix):
+video interpolate clip%.mp4 --factor 50 --quality std

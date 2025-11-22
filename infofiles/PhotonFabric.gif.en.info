@@ -1,0 +1,88 @@
+###PhotonFabric VideoKit – gif (EN)
+
+##Short description
+##-----------------
+Creates animated GIF files from short videos or existing GIFs and can optionally overlay classic meme text at the top and/or bottom (white with black outline, Impact-like font). Supports interactive mode (without file argument) and CLI mode (with file argument and flags). By default, resolution and frame rate are moderately limited where appropriate to improve file size and compatibility; with a flag, the original quality can largely be preserved.
+
+##Usage
+##-----
+video gif [FILES] [--text-top TEXT] [--text-bottom TEXT] [--font-size SIZE] [--fs-top SIZE] [--fs-bottom SIZE] [--keep-quality] [--no-auto-open] [--output PATH]
+
+##Options & Flags
+##----------------
+
+#--text-top, -tt: # <string> (default=empty)
+                 Text line at the top of the GIF (meme text).
+
+#--text-bottom, -tb: # <string> (default=empty)
+                    Text line at the bottom of the GIF (meme text).
+
+#--font-size, -fs: # <string|int> (default=medium)
+                  Global font size for both text lines, as long as no individual sizes are specified. Can either be the direct font size, a numeric value (pixels, minimum of 8px) or one of the following labels:
+                  §thiny§ - 15px
+                  §small§ - 28px
+                  §medium§ - 43px
+                  §grande§ - 61px
+                  §large§ - 82px
+                  §huge§ - 105px
+                  When a label is set, the values for the font size refer to the automatically chosen resolution; if the quality should be preserved (--keep-quality), the font sizes are adjusted according to the resolution.
+
+#--fs-top, -ft: # <string|int> (default=uses font-size)
+               Individual font size only for the top text line. Same options and behavior as --font-size. Overrides the global value from --font-size for the top text.
+
+#--fs-bottom, -fb: # <string|int> (default=uses font-size)
+                  Individual font size only for the bottom text line. Same options and behavior as --font-size. Overrides the global value from --font-size for the bottom text.
+
+#--keep-quality, -q: # <bool-flag> (default=false)
+                    Disables the automatic limitation of resolution and frame rate.
+                    • Without flag (default):
+                    - Frame rate is limited to a maximum of ~20 FPS (if the source is higher).
+                    - Width is scaled down to a maximum of ~480 pixels (aspect ratio is preserved).
+                    → smaller files, better compatibility, and faster creation.
+                    • With flag (--keep-quality):
+                    - Uses the original resolution and frame rate as far as possible.
+                    → larger files, but with as much detail as possible and smoother animation.
+
+#--no-auto-open, -na: # <bool-flag> (default=false)
+                     Opens the generated GIFs automatically in the default image viewer after successful creation.
+
+#--output, -o: # <string> (default=automatic)
+              Output path or file name for the generated GIFs. If omitted, the same file name as the source is used, with the suffix _meme and extension .gif.
+
+##Notes
+##-----
+Interactive mode
+    Without a file argument, a guided dialog starts:
+    • File selection via a menu (supported video/GIF formats)
+    • Optional: question whether GIF resolution/frame rate should be reduced to save disk space
+    • Optional: input for top/bottom text (empty input = line is skipped)
+    • Selection of font sizes for top/bottom line via predefined profiles
+
+Automatic quality adjustment
+    An internal “pre-chain” checks the source (width, frame rate) and only applies filters when it makes sense:
+    • fps > 20 → limit to 20 FPS
+    • width > 480 px → scale to a max. width of 480 px (height is scaled accordingly)
+    This limitation is disabled by --keep-quality.
+
+Palette workflow
+    GIF creation uses a palette pipeline for better quality:
+    • Source is filtered (pre-chain + drawtext), split, and a palette is generated.
+    • Then the palette is applied using “paletteuse” (dither=sierra2_4a).
+    This reduces banding and color artifacts and optimizes file size.
+
+Return codes
+    0 success; ≠0 error (e.g. missing input file, ffmpeg problem, or aborted operation).
+
+##Examples
+##--------
+Simple meme GIF from a video with text at the top and bottom:
+video gif clip.mp4 --text-top "WHEN PYTHON FINALLY WORKS" --text-bottom "AND THE BUG WAS JUST A COMMA"
+
+Only bottom text line, with nearly original quality:
+video gif scene.webm --text-bottom "NO COMPROMISES" --keep-quality
+
+Animation from multiple files, automatically named:
+video gif input%.mp4 --text-top "BINGE WATCHING" --text-bottom "JUST ONE MORE EPISODE…" -o meme%.gif
+
+Short GIF without text, with standard quality limiting:
+video gif reaction.mov

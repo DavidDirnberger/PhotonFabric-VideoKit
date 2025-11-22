@@ -1,0 +1,147 @@
+###PhotonFabric VideoKit – extract (EN)
+
+##Short description
+##------------------
+Selectively extracts content from video files: audio tracks (as MP3), subtitle tracks (as text or bitmap subs), single still images (frames), as well as “video-only” versions without audio/subtitles. Supports interactive mode (without file arguments) and CLI mode (with files and flags).
+
+##Usage
+##-----
+video extract [FILES] [--audio] [--subtitle [FILTER/LANGUAGES]] [--frame [TIME]] [--video] [--format FORMATS] [--output PATH]
+
+##Options & Flags
+##----------------
+
+#--frame, -fr: # <string> (default=off)
+              Extracts a single still image (frame) from the video. Without a value (--frame) a reasonable position is chosen automatically (about the first third). With a value the frame position is set precisely:
+              §10§ Seconds as a plain number → 10 s
+              §10s§ Seconds with suffix s
+              §01:23§ MM:SS
+              §00:01:23.500§ HH:MM:SS(.ms)
+              §50%§ Percentage of total duration (0–100 %)
+              §middle§ / §mid§ / §center§ / §centre§ Middle of the total duration
+              Negative times are not supported. The time is clamped to the video length if necessary.
+
+#--audio, -a: # (default=False)
+             Extracts all audio tracks as MP3 files (libmp3lame, quality level -q:a 0).
+             Filenames are uniquely named: '…_audio.mp3' with only one track, '…_audio0_deu.mp3' for track index + language (ISO-639-3) when multiple tracks exist.
+
+#--video, -v: # (default=False)
+             Creates a “video-only” variant without audio, subtitle, data or attachment streams.
+             Video is copied via bitstream copy (-c:v copy), container depends on --format/source:
+             - Default: mp4 (with +faststart)
+             - For unsuitable combinations (e.g. exotic codec in mp4) it automatically falls back to mkv.
+
+#--subtitle, -s: # <optional string> (default=off)
+                Extracts subtitle tracks in a desired format (text or bitmap):
+                §--subtitle§ (without value) → all available subtitle tracks are extracted.
+                §--subtitle all§ → likewise, all subtitles.
+                §--subtitle de,eng§ → only tracks with language German/English (ISO-639-3 after normalization: deu, eng).
+                §--subtitle ger;en;fr§ → lists with comma or semicolon are accepted.
+                The language list is interpreted robustly (e.g. de, de-DE, german → deu).
+                If no language at all can be recognized, the tool aborts with an appropriate error message.
+
+#--format, -fm: # <string/list> (default=empty)
+               Formats for subtitles and/or frame images. Accepts one or more extensions separated by comma or semicolon, e.g. ass,png or srt;webp. For each category the first valid format is used:
+               Subtitle formats (text):
+               §srt§ Standard SubRip format, widely used and easy to edit.
+               §ass§ Advanced SubStation Alpha, supports styling/positioning.
+               §vtt§ WebVTT, common in web-browser contexts.
+
+               Image formats for frames:
+               §jpg§ Compressed still image, good quality at small file size (default fallback).
+               §png§ Lossless still image, supports transparency (if relevant).
+               §webp§ Modern alternative with good compression.
+               §bmp§ Uncompressed bitmap, mainly for special cases.
+
+#--output, -o: # <string> (default=empty)
+              Base output file. Behavior depends on mode and number of streams:
+              - For single outputs (e.g. one frame, one video-only file) --output can be a target file.
+              - For multiple outputs (e.g. several audio/subtitle tracks or multiple input files), the name is adapted so that input stem + suffix + correct extension are combined (collisions are avoided).
+              - For frame export with a single input file and set --output, the extension is adjusted to the chosen image format if necessary.
+
+##Notes
+##-----
+
+Interactive mode
+    video extract runs in an interactive dialog:
+
+    Selection of extraction type: audio, subtitles, frame or video-only.
+
+    For subtitles:
+    Selection of the output format (e.g. SRT/ASS/VTT).
+    Selection of a language strategy: German only, English only, German+English, all, or a custom list.
+
+    For frames:
+    Selection of the image format (according to internal preset table).
+    Selection of a time preset (e.g. start/middle/end/random) or entry of a custom time.
+
+Automation & defaults
+    If none of the modes --audio, --subtitle, --frame or --video is set, the method tries to choose sensible defaults:
+
+    If --format is passed with subtitle and/or image extensions, the corresponding modes are automatically enabled:
+
+    If only a single input file is provided and still no explicit modes are set, the following applies:
+
+    Audio extraction: on
+
+    Subtitle extraction: on (all tracks)
+
+    Frame export: on, with a “middle”-like position.
+
+    If only --output is set, its extension can implicitly determine the mode (e.g. .srt → subtitles, .png → frame) if no flags are set yet.
+
+Subtitles & languages
+    ffprobe is used to detect all subtitle streams including language and disposition.
+
+    Languages are normalized to ISO-639-3 (e.g. de, de-DE, german → deu), internal blacklists (like ffprobe defaults) are respected.
+
+    The filenames of subtitle outputs encode useful information:
+
+    Language code (ISO-3), e.g. deu, eng.
+
+    Dispositions such as “forced” or “sdh” (subtitles for the hard of hearing) are reflected in the name.
+
+    Multiple tracks with identical labels get a counter (_deu, _deu_2, …) to avoid collisions.
+
+    Bitmap subtitles (e.g. DVD/PGS):
+
+    If a text format (SRT/ASS/VTT) is requested but the stream is bitmap-based, a warning is issued.
+
+    PGS-like streams are exported as sup.
+
+    DVD/VobSub-like streams are exported as vobsub (IDX/SUB).
+
+Frame export
+    Exactly one frame per file is extracted.
+
+    The chosen time is clamped to the known total duration; if the duration is unknown a cautious fallback is used (e.g. 1 s).
+
+    The image format is chosen according to the --format/--output heuristic; without explicit choice, jpg is the default.
+
+    After successful extraction the image is automatically displayed (if configured), e.g. via the system’s image viewer.
+
+Video-only
+    Ideal for creating “silent” or “clean” video versions (e.g. for later re-mastering).
+
+    The video stream is copied unchanged (copy) to avoid re-encoding.
+
+    All other streams (audio, subtitles, data, attachments) are removed.
+
+    The output container is derived from --format, with a robust fallback to compatible combinations.
+
+##Examples
+##--------
+Extract audio & subtitles from a movie (standard formats):
+video extract film.mkv --audio --subtitle
+
+Only German and English subtitles as ASS, plus one frame as PNG:
+video extract film.mkv --subtitle de,eng --frame 50% --format ass,png
+
+Extract a single frame in the middle as PNG:
+video extract clip.mp4 --frame middle --format png
+
+Save all audio tracks of a series folder as MP3:
+video extract SerieS01E%.mkv --audio --output audio_out/
+
+Create a video-only version without audio/subtitles, preferably in MKV:
+video extract master.mov --video --format mkv --output master_video_only.mkv

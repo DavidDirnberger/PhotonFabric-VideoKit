@@ -1,0 +1,139 @@
+###PhotonFabric VideoKit – enhance (EN)
+
+##Short description
+##------------------
+Enhances videos using ffmpeg filters. Supports stabilization, noise reduction, and color/brightness correction via presets or freely configurable individual parameters. Can run in interactive mode (without file arguments) or in CLI/batch mode (with file arguments and flags). Container and codec selection are handled automatically by the existing encoding logic, audio streams are passed through or re-encoded appropriately.
+
+##Usage
+##-----
+video enhance [FILES] [--preset PRESET] [--stabilize] [--stab-method METHOD] [--denoise] [--denoise-method FILTER] [--denoise-intensity INT] [--warmth %] [--tint %] [--brightness %] [--contrast %] [--saturation %] [--output PATH]
+
+##Options & Flags
+##----------------
+
+#--preset, -p: # <string> (default=empty)
+              Selects a predefined enhancement profile combining stabilization, denoise and color adjustments:
+              §soft§ Very light correction: minimal brightness/contrast boost, gentle stabilization & light denoising.
+              §realistic§ Realistic optimization: normalize + standard stabilization & medium denoising.
+              §max§ Maximum improvement: normalize + histogram equalizer, strong stabilization & denoising.
+              §color_levels§ Slightly increased dynamic range via raised levels.
+              §cinematic§ Cinematic look: gentle curve adjustments emulated via sliders.
+              §hist_eq§ Automatic histogram equalization emulated via sliders.
+              §vibrance§ Selective saturation boost.
+              §stabilize_only§ Stabilization only, no other filters.
+              §denoise_only§ Denoising only, no other filters.
+
+#--stabilize, -st: # (default=False)
+                  Enables video stabilization. If no further details are given, the vidstab filter with value 20 is used.
+                  If sub-parameters like --stab-method, --stab-smooth, --stab-rx or --stab-ry are set, stabilization is automatically enabled.
+                  The actual method is selected via --stab-method.
+
+#--stab-method, -stm: # <string> (choices=vidstab (default), deshake)
+                     Chooses the stabilization type:
+                     §vidstab§ Two-pass stabilization based on vidstabdetect/vidstabtransform. Analyzes a portion of the video and smooths camera motion using a configurable smoothing value.
+                     §deshake§ Single-pass stabilization using deshake; works with horizontal/vertical search windows (rx/ry) and is more suited to smaller shakes.
+
+#--stab-smooth, -sts: # <int> (default=preset/20)
+                     Smoothing strength for vidstab:
+                     Lower values → reacts faster but can look “nervous”.
+                     Higher values → much smoother, calmer camera motion, but more sluggish.
+
+#--stab-rx, -stx: # <int> (default=preset/15)
+#--stab-ry, -sty: # <int> (default=preset/10)
+                 Search windows for horizontal (rx) and vertical (ry) motion with deshake.
+                 Values are internally quantized to a 16-step grid in the range ~16–64 to enforce stable parameters.
+                 Larger values → more robust against strong shake, but slower and potentially with more artifacts.
+
+#--denoise, -d: # (default=False)
+              Enables noise reduction. It is automatically enabled if --denoise-method and/or --denoise-intensity are explicitly set.
+              The concrete filter type is chosen via --denoise-method; by default nlmeans with an intensity of 8 is used.
+
+#--denoise-method, -dm: # <string> (choices=hqdn3d, nlmeans)
+                       Selects the denoise filter:
+                       §hqdn3d§ Classic spatio-temporal denoiser (high-frequency noise is smoothed across space/time). Well suited to strong noise and generic camcorder/phone footage.
+                       §nlmeans§ Non-linear “Non-Local Means” denoiser, detail-preserving but computationally expensive. Better for high-quality material or more moderate noise reduction.
+
+#--denoise-intensity, -di: # <int> (0–100, default≈50)
+                          Strength of noise reduction in percent:
+                          §0–30§ light smoothing, most details remain intact.
+                          §40–70§ clearly visible noise reduction, sensible everyday range.
+                          §80–100§ very strong smoothing, can wash out fine details and textures.
+                          Internally, the percentage is mapped to a filter-specific sigma scale (different curves for hqdn3d and nlmeans).
+
+#--warmth, -w: # <int> (0–100, default=50)
+              Color temperature. 50 is neutral.
+              Values above 50 → warmer image (more red, less blue).
+              Values below 50 → cooler image (more blue, less red).
+
+#--tint, -t: # <int> (0–100, default=50)
+            Green/magenta tint. 50 is neutral.
+            Values above 50 → more “greenish” tendency.
+            Values below 50 → more “magenta” cast.
+            Combined with warmth, this can correct color casts.
+
+#--brightness, -b: # <int> (0–100, default=50)
+                  Brightness. 50 is neutral.
+                  Higher values → overall brighter image.
+                  Lower values → darker image.
+
+#--contrast, -c: # <int> (0–100, default=50)
+                Contrast. 50 is neutral.
+                Higher values → stronger separation between light and dark, “crisper” image.
+                Lower values → flatter image with less contrast.
+
+#--saturation, -s: # <int> (0–100, default=50)
+                  Color saturation. 50 is neutral.
+                  Higher values → more vivid colors (beware of over-saturation).
+                  Lower values → desaturated/neutral look up to almost monochrome.
+
+#--output, -o: # <string> (default=empty)
+              Output path/file. If omitted, the output name is derived from the source:
+              §<name>_enhanced.ext§ when no special tags are active.
+              §<name>_denoise..._warm60_con55.ext§ if denoiser and/or color sliders are active (combination of filter tags in the file name).
+              For multiple files, outputs stay in the same directory, and file names are adapted individually per source.
+
+##Notes
+##-----
+
+Automatic behavior & defaults
+    If stabilization sub-parameters are set (--stab-method, --stab-smooth, --stab-rx, --stab-ry), --stabilize is automatically enabled internally.
+    If denoise sub-parameters are set (--denoise-method, --denoise-intensity), --denoise is automatically enabled.
+    Color sliders default to 50 % (neutral). Values from 0–100 are mapped to sensible internal ranges.
+
+Stabilization (vidstab/deshake)
+    vidstab operates internally in two passes:
+    - Analysis pass using vidstabdetect (up to about 15 s duration).
+    - Correction pass using vidstabtransform with the chosen smoothing value.
+    The analysis duration can be limited using the VM_STAB_SECONDS environment variable (0 or negative = entire video length).
+    deshake uses search windows in x/y direction; before applying the filter, the material is converted to a compatible pixel format (e.g. yuv420p). Very large search windows increase computation time and may produce more restless results.
+
+Denoising
+    Both filters use a unified 0–100 % scale; internally, different sigma values are computed from this.
+    Higher intensities are more computationally expensive and can produce low-detail, “plastic” looking images – especially with nlmeans.
+    In interactive mode, the effect of the chosen denoiser including intensity can be tested on a sample frame before final encoding.
+
+Color and brightness correction
+    Warmth/tint are implemented via a colorbalance filter (midtones). Brightness/contrast/saturation are implemented via eq filters. 50 % means “no change”. In interactive mode, a preview is shown after entering all values; settings can then be confirmed or adjusted.
+
+Encoding & streams
+    enhance internally uses the same encoding base as the conversion logic:
+    Container and codec selection are determined from the source and the global presets (e.g. h264/mp4 as a default, fallback to mkv for incompatible combinations). Audio streams are typically passed through or re-encoded appropriately so the resulting video is “directly playable”. A new output file is always written (no in-place overwrite).
+
+Return codes
+    0 success; ≠0 ffmpeg/environment errors or abort due to missing active filters.
+
+Placeholders for file series
+    As with other commands, the % sign acts as a placeholder for numbering:
+    file%.mkv ⇒ file001.mkv, file6.mkv, file030.mkv, …
+
+##Examples
+##--------
+video enhance film.mkv --preset max
+
+video enhance shaky_clip%.mp4 --stab-method vidstab --stab-smooth 24 --denoise-intensity 70
+
+video enhance noisy.mov --denoise --stabilize
+
+video enhance clip.mp4 --warmth 65 --tint 55 --brightness 55 --contrast 60 --saturation 60
+
+video enhance master.mkv --preset realistic --output enhanced/master_realistic.mkv

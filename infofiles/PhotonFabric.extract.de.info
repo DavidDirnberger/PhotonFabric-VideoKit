@@ -1,0 +1,148 @@
+###PhotonFabric VideoKit – extract (DE)
+
+##Kurzbeschreibung
+##----------------
+Extrahiert gezielt Inhalte aus Videodateien: Audiospuren (als MP3), Untertitelspuren (als Text- oder Bild-Subs), einzelne Standbilder (Frames) sowie „Video-only“-Versionen ohne Audio/Untertitel. Unterstützt interaktiven Modus (ohne Dateiangaben) und CLI-Modus (mit Dateien und Flags).
+
+##Aufruf
+##------
+video extract [DATEIEN] [--audio] [--subtitle [FILTER/SPRACHEN]] [--frame [ZEIT]] [--video] [--format FORMATE] [--output PFAD]
+
+##Optionen & Flags
+##----------------
+
+#--frame, -fr: # <string> (default=aus)
+              Extrahiert ein einzelnes Standbild (Frame) aus dem Video. Ohne Wert (--frame) wird automatisch eine sinnvolle Position gewählt (ca. erstes Drittel). Mit Wert wird die Frame-Position präzise gesetzt:
+              §10§ Sekundenangabe als Zahl → 10 s
+              §10s§ Sekundenangabe mit Suffix s
+              §01:23§ MM:SS
+              §00:01:23.500§ HH:MM:SS(.ms)
+              §50%§ Prozentangabe der Gesamtdauer (0–100 %)
+              §middle§ / §mid§ / §center§ / §centre§ Mitte der Gesamtdauer
+              Negative Zeiten werden nicht unterstützt. Die Zeit wird bei Bedarf an die Videolänge geclamped.
+
+#--audio, -a: # (default=False)
+             Extrahiert alle Audiospuren als MP3-Dateien (libmp3lame, Qualitätsstufe -q:a 0).
+             Dateinamen werden eindeutig benannt '…_audio.mp3' bei nur einer Spur '…_audio0_deu.mp3' für Spur-Index + Sprache (ISO-639-3), wenn mehrere Spuren vorhanden sind.
+
+#--video, -v: # (default=False)
+             Erzeugt eine „Video-only“-Variante ohne Audio-, Untertitel-, Daten- oder Attachments-Streams.
+             Video wird per Bitstream-Copy übernommen (-c:v copy), Container abhängig von --format/Quelle:
+             - Standard: mp4 (mit +faststart)
+             - Bei ungeeigneten Kombinationen (z. B. exotischer Codec in mp4) wird automatisch auf mkv gewechselt.
+
+#--subtitle, -s: # <optional string> (default=aus)
+                Extrahiert Untertitelspuren in ein gewünschtes Format (Text oder Bild):
+                §--subtitle§ (ohne Wert) → alle verfügbaren Untertitelspuren werden extrahiert.
+                §--subtitle all§ → ebenfalls alle Untertitel.
+                §--subtitle de,eng§ → nur Spuren mit Sprache Deutsch/Englisch (ISO-639-3 nach Normalisierung: deu, eng).
+                §--subtitle ger;en;fr§ → Listen mit Komma oder Semikolon werden akzeptiert.
+                Die Sprachliste wird robust interpretiert (z. B. de, de-DE, german → deu).
+                Wird keine einzige Sprache erkannt, bricht das Tool mit einer entsprechenden Fehlermeldung ab.
+
+#--format, -fm: # <string/list> (default=leer)
+               Formate für Untertitel und/oder Frame-Bilder. Akzeptiert eine oder mehrere Endungen, getrennt durch Komma oder Semikolon, z. B. ass,png oder srt;webp. Es wird pro Kategorie jeweils das erste gültige Format verwendet:
+               Untertitelformate (Text):
+               §srt§ Standard-SubRip-Format, weit verbreitet und gut editierbar.
+               §ass§ Advanced SubStation Alpha, unterstützt Styling/Positionierung.
+               §vtt§ WebVTT, häufig im Webbrowser-Umfeld.
+
+               Bildformate für Frames:
+               §jpg§ Komprimiertes Standbild, gute Qualität bei kleiner Dateigröße (Standard-Fallback).
+               §png§ Verlustfreies Standbild, unterstützt Transparenz (falls relevant).
+               §webp§ Moderne Alternative mit guter Kompression.
+               §bmp§ Unkomprimiertes Bitmap, eher für Spezialfälle.
+
+
+#--output, -o: # <string> (default=leer)
+              Basis-Ausgabedatei. Das Verhalten hängt von Modus und Anzahl der Streams ab:
+              - Bei Einzeldaten (z. B. ein Frame, ein Video-only-Output) kann --output eine Zieldatei sein.
+              - Bei mehreren Outputs (z. B. mehrere Audio-/Subtitle-Spuren oder mehrere Eingabedateien) wird der Name so angepasst, dass Input-Stem + Suffix + richtige Endung kombiniert werden (Kollisionen werden vermieden).
+              - Für Frame-Export mit nur einer Eingabedatei und gesetztem --output wird die Endung ggf. auf das gewählte Bildformat angepasst.
+
+##Hinweise
+##--------
+
+Interaktiver Modus
+    Video extract wird in einem interaktiven Dialog laufen:
+
+    Auswahl des Extraktionstyps: Audio, Untertitel, Frame oder Video-only.
+
+    Bei Untertiteln:
+    Auswahl des Ausgabeformats (z. B. SRT/ASS/VTT).
+    Auswahl einer Sprachstrategie: nur Deutsch, nur Englisch, Deutsch+Englisch, alle oder benutzerdefinierte Liste.
+
+    Bei Frames:
+    Auswahl des Bildformats (gemäß interner Preset-Tabelle).
+    Auswahl eines Zeit-Presets (z. B. Anfang/Mitte/Ende/Zufällig) oder Eingabe eines eigenen Zeitpunkts.
+
+Automatik & Defaults
+    Wenn keine der Modi --audio, --subtitle, --frame oder --video gesetzt ist, versucht die Methode, sinnvolle Defaults zu wählen:
+
+    Wird --format mit Untertitel- und/oder Bild-Endungen übergeben, werden die entsprechenden Modi automatisch aktiviert:
+
+    Wird nur eine Eingabedatei übergeben und weiterhin keine expliziten Modi gesetzt, gilt:
+
+    Audio-Extraktion: an
+
+    Untertitel-Extraktion: an (alle Spuren)
+
+    Frame-Export: an, mit einer „Mitte“-ähnlichen Position.
+
+    Wird nur --output gesetzt, kann dessen Endung implizit den Modus bestimmen (z. B. .srt → Untertitel, .png → Frame), falls noch keine Flags gesetzt sind.
+
+Untertitel & Sprachen
+    ffprobe wird verwendet, um alle Untertitelstreams inkl. Sprache und Disposition zu ermitteln.
+
+    Sprachen werden auf ISO-639-3 normalisiert (z. B. de, de-DE, german → deu), interne Blacklists (wie ffprobe-Defaults) werden berücksichtigt.
+
+    Die Dateinamen von Untertitel-Outputs codieren sinnvolle Infos:
+
+    Sprachkürzel (ISO-3), z. B. deu, eng.
+
+    Dispositionen wie „forced“ oder „sdh“ (Hörgeschädigten-Untertitel) werden im Namen reflektiert.
+
+    Mehrere Spuren mit identischem Label erhalten eine Zählung (_deu, _deu_2, …), um Kollisionen zu vermeiden.
+
+    Bitmap-Untertitel (z. B. DVD/PGS):
+
+    Wenn ein Textformat (SRT/ASS/VTT) gewünscht, aber der Stream bitmap-basiert ist, gibt es eine Warnung.
+
+    PGS-ähnliche Streams werden als sup exportiert.
+
+    DVD/VobSub-ähnliche Streams werden als vobsub (IDX/SUB) exportiert.
+
+Frame-Export
+    Es wird immer genau ein Frame pro Datei extrahiert.
+
+    Die gewählte Zeit wird auf die bekannte Gesamtdauer geclamped; bei fehlender Dauerangabe wird ein vorsichtiger Fallback benutzt (z. B. 1 s).
+
+    Das Bildformat wird gemäß --format/--output-Heuristik gewählt; ohne explizite Vorgabe ist jpg der Standard.
+
+    Nach erfolgreicher Extraktion wird das Bild (sofern konfiguriert) automatisch angezeigt (z. B. über den systemabhängigen Bildbetrachter).
+
+Video-only
+    Ideal, um „stumme“ oder „saubere“ Videoversionen zu erstellen (z. B. zum späteren Re-Mastering).
+
+    Der Videostream wird unverändert übernommen (Copy), um erneutes Encoding zu vermeiden.
+
+    Alle anderen Streams (Audio, Untertitel, Daten, Attachments) werden entfernt.
+
+    Der Ausgabekontainer wird aus --format abgeleitet, mit robustem Fallback auf kompatible Kombinationen.
+
+##Beispiele
+##---------
+Audio & Untertitel aus einem Film extrahieren (Standardformate):
+video extract film.mkv --audio --subtitle
+
+Nur deutsche und englische Untertitel als ASS, dazu ein Frame als PNG:
+video extract film.mkv --subtitle de,eng --frame 50% --format ass,png
+
+Nur einen Frame in der Mitte als PNG exportieren:
+video extract clip.mp4 --frame middle --format png
+
+Alle Audiospuren eines Serien-Ordners als MP3 speichern:
+video extract SerieS01E%.mkv --audio --output audio_out/
+
+Video-only-Version ohne Ton/Untertitel erzeugen, vorzugsweise im MKV-Container:
+video extract master.mov --video --format mkv --output master_video_only.mkv

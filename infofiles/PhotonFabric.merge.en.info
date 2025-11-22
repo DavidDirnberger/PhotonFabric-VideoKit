@@ -1,0 +1,145 @@
+###PhotonFabric VideoKit – merge (EN)
+
+##Short description
+##-----------------
+Combines videos with additional video clips and/or audio tracks and/or subtitle files. Supports interactive mode (without file arguments) and CLI mode (with files and flags). Resolution, unification strategy, offsets and optional extension (“extend”) can be chosen explicitly. Existing streams are preserved losslessly where possible; required re-encodes follow container/codec rules. The first cover/thumbnail found among the inputs is extracted and embedded into the output video.
+
+##Usage
+##-----
+video merge [FILES] [--target-res MODE] [--offset T] [--pause T] [--audio-offset T] [--subtitle-offset T] [--extend] [--format FORMAT] [--codec CODEC] [--preset PRESET] [--output PATH]
+
+##Options & Flags
+##----------------
+#--target-res, -tr: # <string> (default=no-scale)
+                   How to unify resolution.
+                   §match-first§ Bring all clips to the resolution of the first video (pad/crop chosen interactively).
+                   §no-scale§ No scaling; smaller clips are padded.
+                   §smallest§ Scale down to the smallest common size.
+                   §average§ Scale to the average of all source sizes.
+                   §largest§ Scale up to the largest source size.
+                   §fixed:WxH§ Set a fixed target size directly (e.g. fixed:1920x1080).
+                   §WxH§ Short form for fixed (e.g. 1920x1080).
+
+#--offset, -O: # <string> (default=0)
+              Initial offset before the first clip, or global offset for the video in “video + assets” mode. Formats: "30s", "-12", "1:23:45.67"
+
+#--pause, -pa: # <string> (default=0)
+              Silence/black gap between consecutive clips. Time syntax as for --offset.
+
+#--audio-offset, -ao: # <string> (default=0)
+                     Offset for additionally added audio files relative to the video. Same time formats as above; negative values allowed.
+
+#--subtitle-offset, -so: # <string> (default=0)
+                        Offset for additionally added subtitle files relative to the video. Same time formats as above; negative values allowed.
+
+#--burn-subtitle, -bs: # <flag>
+                      Burn subtitles into the video (experimental; may be a no-op depending on your build).
+
+#--subtitle-name, -sn: # <string>
+                      Uniform title for newly added subtitle tracks (overrides automatic naming).
+
+#--audio-name, -an: # <string>
+                   Uniform title for newly added audio tracks (overrides automatic naming).
+
+#--extend, -e: # <flag>
+              Extends the video (black + silence) to the length of the longest additional track (audio/subtitles).
+
+#--format, -f: # <string> (default=source or mp4)
+              Target container.
+              §keep§ Keeps the source container for each file.
+              §mp4§ Supports multiple audio and subtitle tracks, some metadata, chapters and thumbnail. Widely used, highly compatible, ideal for web and mobile. Codecs: h264, hevc, av1, mpeg4
+              §mkv§ Supports multiple audio and subtitle tracks, all metadata, chapters, thumbnail, alpha channel and most codecs; ideal for archiving complex multimedia videos. Codecs: h264, hevc, av1, vp9, vp8, mpeg2video, mpeg4, prores, dnxhd, jpeg2000, mjpeg, ffv1, huffyuv, utvideo, theora, png, magicyuv, cineform, rawvideo
+              §avi§ Supports only a few metadata fields and alpha channel. Older format with larger file sizes and less efficient compression. Codecs: mpeg4, cineform, mjpeg, huffyuv, utvideo, hap, rawvideo
+              §mov§ Supports multiple audio and subtitle tracks, some metadata, chapters and alpha channel. Apple QuickTime format, high quality, best suited for macOS/iOS. Codecs: prores, dnxhd, h264, hevc, jpeg2000, qtrle, hap, cineform, mjpeg, png
+              §webm§ Supports all metadata. Open format optimized for use on the web. Codecs: vp9, vp8, av1
+              §mpeg§ Former standard (MPEG-1/2) used on older systems and for DVDs. Codecs: mpeg1video, mpeg2video
+
+#--codec, -c: # <string> (default=source-like/suitable)
+             Target video codec.
+             §copy§ Attempts bitstream copy.
+             §h264§ Widely used with good efficiency and broad hardware support. Mathematically lossless possible.
+             §hevc§ More efficient than H.264 (typically 25–50% lower bitrate at similar quality). Requires newer devices/players and suitable licensing. Mathematically lossless possible.
+             §av1§ Royalty-free and very efficient; support in browsers and hardware is growing quickly. Mathematically lossless possible.
+             §vp9§ Open web codec; often 20–50% smaller than H.264 at similar quality. Typically used in WebM. Mathematically lossless possible.
+             §vp8§ Older open web codec (8-bit 4:2:0) with high compatibility. Typically used in WebM.
+             §mpeg4§ Older than H.264, less efficient but easy to decode. Historically Xvid/DivX class, today mostly used for compatibility.
+             §prores§ Intraframe mezzanine codec for editing/grading (10-bit 4:2:2/4:4:4:4 depending on profile); alpha supported.
+             §dnxhd§ Intraframe mezzanine codec for editing/proxy workflows.
+             §jpeg2000§ Intraframe codec commonly used in DCP/archiving. Alpha possible; mathematically lossless possible.
+             §mjpeg§ Intraframe, robust and highly compatible. Larger files; useful for capture/intermediate files.
+             §ffv1§ Lossless intraframe codec with high efficiency; popular for long-term archiving. Supports 10-bit and optional checksums. Mathematically lossless; alpha possible.
+             §huffyuv§ Lossless and very fast; historically widespread. Mathematically lossless and alpha possible.
+             §utvideo§ Lossless, fast and cross-platform. Popular as intermediate codec; mathematically lossless possible and supports RGBA.
+             §theora§ Free older video codec, nowadays rarely used.
+             §qtrle§ Intraframe codec with alpha support; good for UI captures and graphics. Typically used in the MOV container. Mathematically lossless possible.
+             §hap§ GPU-friendly intraframe codec for real-time playback with alpha support. Common in live/installation setups; usually stored as MOV.
+             §rawvideo§ Uncompressed and maximally compatible. Very large files; virtually no encoder options. Lossless by definition and alpha possible (RGBA).
+             §png§ PNG-based intraframe video; lossless and supports alpha. Suitable for graphics/compositing, but produces much larger files. Mathematically lossless; alpha possible.
+             §magicyuv§ Very fast, mathematically lossless intraframe codec. Alpha (RGBA) possible.
+             §cineform§ Intraframe codec for performant editing; 10-/12-bit YUV/RGB depending on build. Alpha possible (RGBA).
+             §mpeg1video§ Older standard (VCD/early MPEG), robust in .mpg/.mpeg (MPEG-PS). Closely related to the MPEG-PS container.
+             §mpeg2video§ Classic broadcast/DVD codec; robust but requires higher bitrates. Common in MPEG-TS/PS and archival workflows.
+
+#--preset, -pr: # <string> (default=casual)
+               Quality/speed profile; may implicitly set max_fps, faststart and scaling (only for messenger & web).
+               §messenger360p§ Very fast, low quality, 640 px width (360p), small file size for chat apps (H.264/MP4 recommended).
+               §messenger720p§ Fast encoding, good file size, 1280 px width (720p); ideal for messengers.
+               §web§ Fast encoding, reduced file size, maximum compatibility and solid quality for online use.
+               §casual§ Balanced quality, speed and maximum compatibility (for everyday videos).
+               §cinema§ High quality, slower encoding and high compatibility (film-like output).
+               §studio§ Very high quality, potentially at the expense of compatibility, for master/archive use in practical file sizes.
+               §ultra§ Maximum visual quality without regard to compatibility, but not truly lossless.
+               §lossless§ Mathematically lossless (where the codec supports it), otherwise near-lossless as far as the format+codec combination allows. Very large files, slow encoding.
+
+#--output, -o: # <string> (default=auto)
+              Output path/file. If omitted: name of the first video + suffix "_merged" and extension = target container.
+
+##Notes
+##--------
+
+Streams & metadata
+• Existing video/audio/subtitle/chapter/metadata/thumbnail of the main video are mapped (where allowed by the chosen format+codec combination); additional subtitles are converted to "mov_text" for MP4/MOV, in MKV/MOV/AVI they are usually passed through as "copy".
+• Title/language of new tracks are heuristically derived from filenames/tags (ISO-639-2) if not set explicitly.
+• Container-specific default audio codecs (e.g. AAC for MP4/MOV, Opus for WebM, AC-3 for AVI) are chosen automatically.
+
+Alpha & pixel format
+• If any source has an alpha channel but the chosen target combination (container/codec) does not support alpha, a warning is shown.
+• Supported alpha combinations (examples): MOV+ProRes 4444, MKV/WebM+VP9/AV1 (alpha), MKV/AVI+UtVideo/FFV1/PNG/QTRLE/RGBA.
+
+Thumbnail
+• The first thumbnail (cover) found among the input files is extracted and embedded into the output file after successful processing.
+
+Interactive flow
+• Selection order: container → codec (only if relevant) → preset (if re-encoding is needed) → target strategy/size → offsets/pauses → output settings.
+
+Compatibility & faststart
+• For MP4, "+faststart" may be enabled depending on the preset (optimizes web start-up times).
+• "m4v" is treated as an alias of "mp4".
+
+Return codes
+• 0 on success; ≠0 for ffmpeg/environment errors.
+
+Batch placeholder
+• The % character is used to number files:
+file%.mkv → file001.mkv, file6.mkv, file030.mkv, …
+
+##Examples
+##---------
+
+Join two clips seamlessly, match size to first clip, add a small pause:
+video merge a.mp4 b.mp4 --target-res match-first --pause 1.0s --format mkv --codec h264 --preset casual
+
+Multiple clips without scaling (smaller ones are padded), visually near-lossless ProRes (MOV):
+video merge part1.mov part2.mov part3.mov -tr no-scale -f mov -c prores -pr studio
+
+Combine one video with an additional audio track and subtitles (fast muxing, video stays "copy"), set offsets:
+video merge movie.mkv dub_de.aac subs_en.srt --audio-offset 1.5s --subtitle-offset 2% --format mkv
+
+Unify clips to a fixed size and lower FPS (concat path), using a high-quality archival codec:
+video merge c1.mkv c2.mkv --target-res fixed:1920x1080 -f mkv -c ffv1 -pr lossless
+
+External audio track longer than the video → extend to the end:
+video merge base.mp4 commentary.wav --extend -f mp4 -c h264 -pr casual
+
+Assign unified titles to new tracks:
+video merge clip.mp4 dub_fr.aac subs_de.vtt --audio-name "French" --subtitle-name "German" -f mp4
