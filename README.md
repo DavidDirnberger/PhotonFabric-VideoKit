@@ -17,6 +17,8 @@ PhotonFabric VideoKit wraps common video tasks into focused subcommands:
 - **AI upscaling & enhancement** (Real-ESRGAN / RealCUGAN, etc.)
 - stream extraction (audio, frames, subtitles, thumbnails)
 
+Designed for curating and enriching large video collections: normalize formats, batch-fix quality, add or repair metadata, and bulk-generate thumbnails or gifs in one place. Everything can be run interactively for quick tasks or in batch mode to process many files unattended.
+
 All subcommands follow the same philosophy:
 
 - **Interactive mode** (no file arguments): guided wizard, safe defaults, explanations.
