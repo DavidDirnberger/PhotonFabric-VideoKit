@@ -284,16 +284,21 @@ def print_banner(
 
 
 def print_package_headline() -> None:
-    print(
-        "\n"
-        + c.combine("bold", "pearl")
+    term_cols = shutil.get_terminal_size((80, 20)).columns
+    title = f" 🎬 PhotonFabric VideoKit - { _('package_description') } "
+    title_w = visible_width(title)
+    pad_total = max(0, term_cols - title_w)
+    pad_left = pad_total // 2
+    pad_right = pad_total - pad_left
+    line = (
+        c.combine("bold", "pearl")
         + c.get("deep_blue", background=True)
-        + "          🎬 PhotonFabric VideoKit - "
-        + _("package_description")
-        + "            "
+        + (" " * pad_left)
+        + title
+        + (" " * pad_right)
         + c.get("reset")
-        + "\n"
     )
+    print("\n" + line + "\n")
 
 
 def print_start(method: str) -> None:
@@ -1166,12 +1171,26 @@ def show_info(subcommand: Optional[str] = None) -> None:
     chosen: Optional[Path] = None
     lower_names = [(p, p.name.lower()) for p in infos]
 
+    def _pick_best(matches: list[Path]) -> Optional[Path]:
+        if not matches:
+            return None
+
+        # Prefer the candidate with the fewest dots in the filename (PhotonFabric.<lang>.info beats PhotonFabric.<sub>.<lang>.info)
+        def _dot_count(p: Path) -> int:
+            return p.name.count(".")
+
+        return min(matches, key=_dot_count)
+
     for suffix in wanted_suffixes:
         suf = suffix.lower()
-        for p, lname in lower_names:
-            if lname.endswith(suf):
-                chosen = p
-                break
+        if subcommand:
+            for p, lname in lower_names:
+                if lname.endswith(suf):
+                    chosen = p
+                    break
+        else:
+            candidates = [p for p, lname in lower_names if lname.endswith(suf)]
+            chosen = _pick_best(candidates)
         if chosen:
             break
 

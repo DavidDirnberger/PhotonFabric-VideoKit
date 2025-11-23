@@ -447,15 +447,33 @@ def get_model_meta() -> Dict[str, Dict[str, Any]]:
 
 
 def desc_from_meta(meta: Dict[str, Any]) -> str:
-    """Liefert lokalisierte Modellbeschreibung aus Meta-Map (Fallbacks de/en/erstes Element)."""
+    """Liefert lokalisierte Modellbeschreibung aus Meta-Map (prefer current UI lang, then en, then de, then any)."""
+    lang_pref = None
+    try:
+        import i18n
+
+        lang_pref = getattr(i18n, "get_lang", None)
+        if callable(lang_pref):
+            lang_pref = lang_pref()
+        else:
+            lang_pref = None
+    except Exception:
+        lang_pref = None
+    if not lang_pref:
+        lang_pref = os.environ.get("LANG", "en").split(".")[0].split("_")[0].lower()
+    if not lang_pref:
+        lang_pref = "en"
+
     d = meta.get("desc", "")
     if isinstance(d, dict):
-        lang = getattr(defin, "LANG", None)
-        if isinstance(lang, str) and lang in d:
-            return str(d[lang])
-        for k in ("de", "en"):
+        # 1) aktuelle Sprache
+        if isinstance(lang_pref, str) and lang_pref in d:
+            return str(d[lang_pref])
+        # 2) en, dann de
+        for k in ("en", "de"):
             if k in d:
                 return str(d[k])
+        # 3) erstes Element
         try:
             return str(next(iter(d.values())))
         except Exception:

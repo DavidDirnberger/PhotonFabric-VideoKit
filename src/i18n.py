@@ -195,8 +195,8 @@ MESSAGES = {
         "enter_name": "Enter name",
         "no_parameters_changed": "No parameters changed.",
         "process_parameters": "Process-specific parameters",
-        "cancel_hint": "Cancel with ESC • Ctrl+C",
-        "canceled_info": "Canceled (ESC/Strg+C/Strg+K).",
+        "cancel_hint": "Cancel with ESC • Ctrl+C/Ctrl+K",
+        "canceled_info": "Canceled (ESC/Ctrl+C/Ctrl+K).",
         # Prefixes (used by helpers)
         "error_prefix": "ERROR:",
         "warning_prefix": "WARNING:",
