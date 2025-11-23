@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
+# definitions.py
 from __future__ import annotations
 
 import os
 import re
 from pathlib import Path
 from typing import Any, Dict, Final, List, Optional, Set, Tuple, TypedDict, Union
+
+__version__ = "0.0.1-alpha"
 
 LOG_FILE = "LOG_DIR/PhotonFabric_VideoKit.log"
 
