@@ -369,13 +369,21 @@ def _merge(
     return a
 
 
+APP_NAME_DEFAULT = "PhotonFabricVideoKit"
+APP_NAME_FALLBACK = "videoManager"  # backward-compat: older installs wrote here
+
+
 class ConfigManager:
     def __init__(
-        self, project_root: Optional[Path] = None, app_name: str = "videoManager"
+        self, project_root: Optional[Path] = None, app_name: Optional[str] = None
     ) -> None:
-        self.app_name = app_name
+        self.app_name = app_name or APP_NAME_DEFAULT
         self.project_root = Path(project_root) if project_root else None
-        self.user_config_path = Path.home() / ".config" / app_name / "config.ini"
+        self.user_config_path = Path.home() / ".config" / self.app_name / "config.ini"
+        # Optional legacy path – we read it if the new path is empty/missing
+        self._user_config_path_fallback = (
+            Path.home() / ".config" / APP_NAME_FALLBACK / "config.ini"
+        )
         self.project_config_path = (
             (self.project_root / "config.ini") if self.project_root else None
         )
@@ -393,6 +401,9 @@ class ConfigManager:
     def load(self) -> None:
         """Liest User/Projekt/Defaults ein, merged alles, migriert fehlende Keys."""
         self._raw_user_text = _read_file(self.user_config_path)
+        if not self._raw_user_text.strip() and self._user_config_path_fallback.exists():
+            # Backwards-compat: read legacy config if the new one is absent/empty
+            self._raw_user_text = _read_file(self._user_config_path_fallback)
         self._raw_project_text = (
             _read_file(self.project_config_path) if self.project_config_path else ""
         )
