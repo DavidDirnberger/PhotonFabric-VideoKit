@@ -1,10 +1,10 @@
 
-# PhotonFabric – VideoKit
+# PhotonFrame – VideoKit
 
-![PhotonFabric – VideoKit Logo](assets/logo.png)
+![PhotonFrame – VideoKit Logo](assets/logo.png)
 
 A modular, ffmpeg-driven video toolkit with optional AI models – designed for **interactive use on the command line** _and_ for fully automated batch workflows.
-PhotonFabric VideoKit wraps common video tasks into focused subcommands:
+PhotonFrame VideoKit wraps common video tasks into focused subcommands:
 
 - converting & compressing
 - trimming, scaling, cropping/padding
@@ -29,7 +29,7 @@ All subcommands follow the same philosophy:
 
 ## 1. Overview
 
-PhotonFabric – VideoKit is a **modular toolbox built around ffmpeg** (and optional AI models) that breaks typical video workflows into separate commands:
+PhotonFrame – VideoKit is a **modular toolbox built around ffmpeg** (and optional AI models) that breaks typical video workflows into separate commands:
 
 - `convert` – container/codec conversion with presets
 - `compress` – simple “quality in %” interface for filesize reduction
@@ -45,7 +45,7 @@ PhotonFabric – VideoKit is a **modular toolbox built around ffmpeg** (and opti
 - `gif` – animated GIF & meme creation
 - `metadata` – detailed metadata inspection & editing
 
-Every command lives in its own module and has a dedicated infofile under `infofiles/PhotonFabric.<subcommand>.en.info` called by `video <COMMAND> --help/-h`.
+Every command lives in its own module and has a dedicated infofile under `infofiles/PhotonFrame.<subcommand>.en.info` called by `video <COMMAND> --help/-h`.
 
 ---
 
@@ -72,8 +72,8 @@ See the repository’s `install.sh` for the exact, up-to-date dependencies and m
 ### 3.1 Clone the repository
 
 ```bash
-git clone https://github.com/DavidDirnberger/PhotonFabric-VideoKit.git
-cd PhotonFabric-VideoKit
+git clone https://github.com/DavidDirnberger/PhotonFrame-VideoKit.git
+cd PhotonFrame-VideoKit
 ```
 
 ### 3.2 Using the installer (recommended)
@@ -85,7 +85,7 @@ chmod +x install.sh
 
 The installer will:
 
-- create an isolated Conda environment (PhotonFabricVideoKit)
+- create an isolated Conda environment (PhotonFrameVideoKit)
 - install the required Python packages (with offline caches where possible)
 - check/install ffmpeg and ffprobe (via Conda or system packages)
 - optionally install ExifTool for robust metadata handling
@@ -111,8 +111,8 @@ The installer will:
 brew install git ffmpeg aria2 chafa xdg-utils
 
 # 2) Clone the project
-git clone https://github.com/DavidDirnberger/PhotonFabric-VideoKit.git
-cd PhotonFabric-VideoKit
+git clone https://github.com/DavidDirnberger/PhotonFrame-VideoKit.git
+cd PhotonFrame-VideoKit
 
 # 3) Run the installer (prompts for language, AI features, install path)
 chmod +x install.sh
@@ -135,8 +135,8 @@ wsl --update
 
 # 2) Switch Windows Terminal to WSL profile, then inside Ubuntu shell:
 sudo apt update && sudo apt install -y git
-git clone https://github.com/DavidDirnberger/PhotonFabric-VideoKit.git
-cd PhotonFabric-VideoKit
+git clone https://github.com/DavidDirnberger/PhotonFrame-VideoKit.git
+cd PhotonFrame-VideoKit
 
 # 3) Run the installer
 chmod +x install.sh
@@ -187,7 +187,7 @@ video compress season1_ep%.mkv --quality 40
 
 ## 5.1 Streams, metadata & thumbnails
 
-Across commands, PhotonFabric tries to:
+Across commands, PhotonFrame tries to:
 
 - preserve video, audio and subtitle streams where no re-encode is needed (-c copy when possible)
 - preserve or re-embed cover / thumbnail images
@@ -237,7 +237,7 @@ This is used consistently across the toolkit:
   - failed I/O or permission errors
   - model / backend not available
 
-This makes PhotonFabric easy to integrate into shell scripts, batch jobs and CI pipelines.
+This makes PhotonFrame easy to integrate into shell scripts, batch jobs and CI pipelines.
 
 ### 6. Commands in Detail
 
@@ -675,7 +675,7 @@ Please check the existing issues and infofiles before opening a new ticket to ke
 
 ## 8. License
 
-PhotonFabric – VideoKit is licensed under the [MIT License](./LICENSE).
+PhotonFrame – VideoKit is licensed under the [MIT License](./LICENSE).
 
 Some optional components and dependencies are downloaded from their original
 repositories and remain under their respective licenses, including but not

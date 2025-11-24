@@ -1,12 +1,12 @@
 # Third-Party Licenses
 
-This document lists third-party projects and assets that the PhotonFabric - VideoKit installer downloads or references. Please review the upstream licenses before using the software.
+This document lists third-party projects and assets that the PhotonFrame - VideoKit installer downloads or references. Please review the upstream licenses before using the software.
 
 ## Microsoft Core Fonts - Impact
 - Source: https://downloads.sourceforge.net/corefonts/
 - License: Microsoft Core Fonts EULA (proprietary, non-redistributable except via original installer).
 - Notes: impact32.exe is downloaded only after you accept the license during installation.
-- PhotonFabric/VideoKit does not redistribute the Impact font. The installer only downloads the original impact32.exe from the official Core Fonts mirror after you accept the Microsoft EULA.
+- PhotonFrame - VideoKit does not redistribute the Impact font. The installer only downloads the original impact32.exe from the official Core Fonts mirror after you accept the Microsoft EULA.
 
 ## Real-ESRGAN (PyTorch)
 - Repository: https://github.com/xinntao/Real-ESRGAN

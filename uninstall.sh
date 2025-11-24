@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# uninstall.sh – removes a PhotonFabric VideoKit install (safe, with prompts)
+# uninstall.sh – removes a PhotonFrame - VideoKit install (safe, with prompts)
 set -euo pipefail
 
 warn() { echo -e "\e[33m[uninstall]\e[0m $*"; }
@@ -53,11 +53,11 @@ if [[ -f "$INSTALL_DIR/src/videoManager.py" || -f "$INSTALL_DIR/videoManager.py"
   rm -rf "$INSTALL_DIR"
   log "Removed install directory $INSTALL_DIR"
 else
-  warn "Install directory does not look like PhotonFabric VideoKit; left untouched."
+  warn "Install directory does not look like PhotonFrame - VideoKit; left untouched."
 fi
 
 # Optional: user config
-CFG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/PhotonFabricVideoKit"
+CFG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/PhotonFrameVideoKit"
 read -r -p "Remove user config at $CFG_DIR? [y/N]: " CONF_CFG || CONF_CFG="n"
 case "${CONF_CFG,,}" in
   y|yes)

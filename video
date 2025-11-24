@@ -33,8 +33,8 @@ if [[ -n "${_ARGCOMPLETE:-}" ]]; then
 fi
 
 # ── Sanity ──────────────────────────────────────────────────────────────────
-[[ -x "$ENV_BIN/python" ]] || die "Python fehlt: $ENV_BIN/python"
-[[ -f "$APP_PATH"       ]] || die "App fehlt: $APP_PATH"
+[[ -x "$ENV_BIN/python" ]] || die "Python missing: $ENV_BIN/python"
+[[ -f "$APP_PATH"       ]] || die "App missing: $APP_PATH"
 
 # ── ffmpeg: bevorzuge System-ffmpeg mit vid.stab ────────────────────────────
 if command -v /usr/bin/ffmpeg >/dev/null; then

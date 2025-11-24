@@ -34,6 +34,7 @@ diagnose.txt
 config.ini
 *.log
 logs/
+environment.yml
 
 # Sample/Media (vermeide große Dateien im Repo)
 samples/

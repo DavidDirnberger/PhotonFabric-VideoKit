@@ -285,7 +285,7 @@ def print_banner(
 
 def print_package_headline() -> None:
     term_cols = shutil.get_terminal_size((80, 20)).columns
-    title = f" 🎬 PhotonFabric VideoKit - { _('package_description') } "
+    title = f" 🎬 PhotonFrame VideoKit - { _('package_description') } "
     title_w = visible_width(title)
     pad_total = max(0, term_cols - title_w)
     pad_left = pad_total // 2
@@ -1123,7 +1123,7 @@ def show_info(subcommand: Optional[str] = None) -> None:
     """
     Sucht in <projekt>/infofiles/ eine .info-Datei mit Postfix
     [<subcommand>.]<lang>.info, wobei <lang> aus i18n.get_lang() kommt.
-    Beispiel: PhotonFabric.convert.de.info  oder PhotonFabric.de.info
+    Beispiel: PhotonFrame.convert.de.info  oder PhotonFrame.de.info
 
     - Ignoriert den 'base'-Namen (Präfix) der Datei.
     - Fallbacks:
@@ -1175,7 +1175,7 @@ def show_info(subcommand: Optional[str] = None) -> None:
         if not matches:
             return None
 
-        # Prefer the candidate with the fewest dots in the filename (PhotonFabric.<lang>.info beats PhotonFabric.<sub>.<lang>.info)
+        # Prefer the candidate with the fewest dots in the filename (PhotonFrame.<lang>.info beats PhotonFrame.<sub>.<lang>.info)
         def _dot_count(p: Path) -> int:
             return p.name.count(".")
 

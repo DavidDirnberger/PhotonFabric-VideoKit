@@ -9,7 +9,7 @@ human-readable summaries).
 
 ### Added
 
-- **Initial public alpha release of _PhotonFabric – VideoKit_.**
+- **Initial public alpha release of _PhotonFrame – VideoKit_.**
 - Core CLI entry point:
   - `video` launcher script for all subcommands.
   - Shared interactive vs. CLI/batch behaviour across commands.
@@ -96,22 +96,22 @@ human-readable summaries).
     - command summary
     - installation and usage basics
     - licensing notes and third-party overview.
-  - Per-command English infofiles under `infofiles/PhotonFabric.*.en.info`
+  - Per-command English infofiles under `infofiles/PhotonFrame.*.en.info`
     as single source of truth for flags and behaviour:
-    - `PhotonFabric.en.info` (global overview)
-    - `PhotonFabric.convert.en.info`
-    - `PhotonFabric.compress.en.info`
-    - `PhotonFabric.trim.en.info`
-    - `PhotonFabric.scale.en.info`
-    - `PhotonFabric.croppad.en.info`
-    - `PhotonFabric.merge.en.info`
-    - `PhotonFabric.interpolate.en.info`
-    - `PhotonFabric.img2vid.en.info`
-    - `PhotonFabric.extract.en.info`
-    - `PhotonFabric.enhance.en.info`
-    - `PhotonFabric.aienhance.en.info`
-    - `PhotonFabric.gif.en.info`
-    - `PhotonFabric.metadata.en.info`.
+    - `PhotonFrame.en.info` (global overview)
+    - `PhotonFrame.convert.en.info`
+    - `PhotonFrame.compress.en.info`
+    - `PhotonFrame.trim.en.info`
+    - `PhotonFrame.scale.en.info`
+    - `PhotonFrame.croppad.en.info`
+    - `PhotonFrame.merge.en.info`
+    - `PhotonFrame.interpolate.en.info`
+    - `PhotonFrame.img2vid.en.info`
+    - `PhotonFrame.extract.en.info`
+    - `PhotonFrame.enhance.en.info`
+    - `PhotonFrame.aienhance.en.info`
+    - `PhotonFrame.gif.en.info`
+    - `PhotonFrame.metadata.en.info`.
 
 - **Licensing:**
   - Repository licensed under the **MIT License** (`LICENSE` added).
@@ -132,4 +132,4 @@ human-readable summaries).
 
 ---
 
-[0.0.1-alpha]: https://github.com/<your-account>/PhotonFabric-VideoKit/releases/tag/v0.0.1-alpha
+[0.0.1-alpha]: https://github.com/<your-account>/PhotonFrame-VideoKit/releases/tag/v0.0.1-alpha

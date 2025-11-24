@@ -77,7 +77,7 @@ except Exception:
 
 
 # ───────────────────────────── Default-Template ───────────────────────────────
-DEFAULT_TEMPLATE = """# videoManager configuration
+DEFAULT_TEMPLATE = """# PhotonFrame - VideoKit configuration
 [general]
 language = de              # de|en|es|...
 os = auto                  # auto|linux|windows|mac
@@ -85,8 +85,8 @@ batch_mode_default = false
 check_updates = true
 
 [paths]
-default_output_dir = ~/Videos/videoManager
-temp_dir = ~/.cache/videoManager/tmp
+default_output_dir = ~/Videos/PhotonFrameVideoKit
+temp_dir = ~/.cache/PhotonFrameVideoManager/tmp
 ffmpeg_path = auto         # auto oder absoluter Pfad
 aria2_path = auto          # auto oder absoluter Pfad
 
@@ -121,7 +121,7 @@ term_width = auto          # auto oder Zahl
 
 [logging]
 level = INFO               # DEBUG|INFO|WARNING|ERROR
-file = ~/.local/share/videoManager/videoManager.log
+file = ~/.local/share/PhotonFrameVideoKit/PhotonFrameVideoKit.log
 rotate = true
 keep_files = 5
 
@@ -160,15 +160,6 @@ def _which(cmd: str) -> Optional[str]:
 
 def _expand_path(p: str) -> str:
     return os.path.abspath(os.path.expandvars(os.path.expanduser(p)))
-
-
-def _to_bool(val: Union[str, bool, int]) -> bool:
-    if isinstance(val, bool):
-        return val
-    if isinstance(val, int):
-        return val != 0
-    s = str(val).strip().lower()
-    return s in {"1", "true", "yes", "on"}
 
 
 def _strip_inline_comment(val: str) -> str:
@@ -369,7 +360,7 @@ def _merge(
     return a
 
 
-APP_NAME_DEFAULT = "PhotonFabricVideoKit"
+APP_NAME_DEFAULT = "PhotonFrameVideoKit"
 APP_NAME_FALLBACK = "videoManager"  # backward-compat: older installs wrote here
 
 

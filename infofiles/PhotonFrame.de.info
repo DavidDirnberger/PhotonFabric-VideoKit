@@ -1,8 +1,8 @@
-###PhotonFabric VideoKit – Übersicht (DE)
+###PhotonFrame VideoKit – Übersicht (DE)
 
 ##Kurzbeschreibung
 ##----------------
-PhotonFabric – VideoKit ist ein modularer Werkzeugkasten rund um ffmpeg (und optionale KI-Modelle), der typische Video-Workflows in einzelne Kommandos aufteilt: Konvertieren, Komprimieren, Schneiden, Skalieren, Zuschneiden/Auffüllen, Interpolieren, Bildfolgen zu Videos, Mergen, Extrahieren, klassische Filter-Verbesserung, KI-Upscaling, GIF-Erzeugung und Metadatenbearbeitung. Alle Kommandos unterstützen einen interaktiven Modus (ohne Dateiangabe) und einen CLI-/Batch-Modus (mit Dateiangabe und optionalen Flags). Wo möglich werden Container-Eigenschaften, Streams (Audio, Untertitel), Kapitel, Metadaten und Thumbnails erhalten oder sinnvoll neu gesetzt. Alpha-Kanäle werden – sofern der gewählte Codec/Container das unterstützt – mitübernommen.
+PhotonFrame – VideoKit ist ein modularer Werkzeugkasten rund um ffmpeg (und optionale KI-Modelle), der typische Video-Workflows in einzelne Kommandos aufteilt: Konvertieren, Komprimieren, Schneiden, Skalieren, Zuschneiden/Auffüllen, Interpolieren, Bildfolgen zu Videos, Mergen, Extrahieren, klassische Filter-Verbesserung, KI-Upscaling, GIF-Erzeugung und Metadatenbearbeitung. Alle Kommandos unterstützen einen interaktiven Modus (ohne Dateiangabe) und einen CLI-/Batch-Modus (mit Dateiangabe und optionalen Flags). Wo möglich werden Container-Eigenschaften, Streams (Audio, Untertitel), Kapitel, Metadaten und Thumbnails erhalten oder sinnvoll neu gesetzt. Alpha-Kanäle werden – sofern der gewählte Codec/Container das unterstützt – mitübernommen.
 
 ##Aufruf
 ##------

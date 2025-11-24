@@ -197,7 +197,7 @@ def main(argv: Optional[Sequence[str]] = None) -> None:
                 _vm_version = "unknown"
             else:
                 _vm_version = defin.__version__
-            co.print_info(f"PhotonFabric VideoKit { _vm_version }")
+            co.print_info(f"PhotonFrame - VideoKit { _vm_version }")
             return
         elif len(argv_local) > 1 and argv_local[1] in {"--help", "-h"}:
             co.show_info(argv_local[0])

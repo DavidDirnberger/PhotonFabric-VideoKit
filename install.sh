@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
-# This file is part of PhotonFabric / VideoKit.
+# This file is part of PhotonFrame - VideoKit.
 # Copyright (c) 2024–2025 David <…>
 # Licensed under the MIT License. See LICENSE in the project root for details.
 # -----------------------------------------------------------------------------
-#  install.sh - PhotonFabric - VideoKit + Real-ESRGAN/RealCUGAN + (optional) BasicVSR++
+#  install.sh - PhotonFrame - VideoKit + Real-ESRGAN/RealCUGAN + (optional) BasicVSR++
 #  - Language prompt (en/de) at start
 #  - OS/GPU detection -> auto backend selection (torch|ncnn) with CPU/GPU pref
 #  - Model downloads chosen per OS/Hardware (PyTorch or NCNN), always via the
 #    robust download ladder (resume, retries, fallbacks) to work on bad links
 #  - BasicVSR++ (Torch) optional; installs mmengine/mmcv/mmagic + tries weights
-#  - At the end: writes ~/.config/PhotonFabric/config.ini with detected choices
+#  - At the end: writes ~/.config/PhotonFrameVideoKit/config.ini with detected choices
 #  - Safe: does NOT touch system GPU drivers; favors offline/cached installs
 # -----------------------------------------------------------------------------
 set -Eeuo pipefail
@@ -21,7 +21,7 @@ export PYTHONWARNINGS="ignore::DeprecationWarning"
 export MKL_INTERFACE_LAYER="${MKL_INTERFACE_LAYER:-}"
 export CONDA_MKL_INTERFACE_LAYER_BACKUP="${CONDA_MKL_INTERFACE_LAYER_BACKUP:-}"
 
-ENV_NAME="PhotonFabricVideoKit"
+ENV_NAME="PhotonFrameVideoKit"
 PYTHON_VERSION="${PYTHON_VERSION:-3.10.*}"   # conda will pick a recent 3.10.x
 VIDEO_CMD="video"
 
@@ -106,7 +106,7 @@ err()  { echo -e "\e[31m[install]\e[0m $(loc "$*")" >&2; exit 1; }
 # ───────────────────────────── Language prompt (EN/DE) ──────────────────────
 ask_language() {
   local ans
-  echo -ne "${GREEN}Select language for PhotonFabric - VideoKit / Sprache fuer PhotonFabric - VideoKit waehlen [1] English / [2] Deutsch (default: 1): ${CEND}"
+  echo -ne "${GREEN}Select language for PhotonFrame - VideoKit / Sprache fuer PhotonFrame - VideoKit waehlen [1] English / [2] Deutsch (default: 1): ${CEND}"
   read -r ans || ans=""
   case "${ans:-1}" in
     2) VM_LANG="de" ;;
@@ -263,14 +263,14 @@ ensure_unzip() {
 impact_font_target_dir() {
   local os="${1:-$(detect_os_name)}"
   case "$os" in
-    mac) echo "$HOME/Library/Application Support/PhotonFabric/fonts" ;;
+    mac) echo "$HOME/Library/Application Support/PhotonFrameVideoKit/fonts" ;;
     windows)
       local base="${LOCALAPPDATA:-$HOME/.local/share}"
-      echo "$base/PhotonFabric/fonts"
+      echo "$base/PhotonFrameVideoKit/fonts"
       ;;
     *)
       local xdg="${XDG_DATA_HOME:-$HOME/.local/share}"
-      echo "$xdg/PhotonFabric/fonts"
+      echo "$xdg/PhotonFrameVideoKit/fonts"
       ;;
   esac
 }
@@ -394,13 +394,13 @@ write_third_party_licenses() {
   cat > "$dest" <<EOF
 # Third-Party Licenses
 
-This document lists third-party projects and assets that the PhotonFabric - VideoKit installer downloads or references. Please review the upstream licenses before using the software.
+This document lists third-party projects and assets that the PhotonFrame - VideoKit installer downloads or references. Please review the upstream licenses before using the software.
 
 ## Microsoft Core Fonts - Impact
 - Source: https://downloads.sourceforge.net/corefonts/
 - License: Microsoft Core Fonts EULA (proprietary, non-redistributable except via original installer).
 - Notes: impact32.exe is downloaded only after you accept the license during installation.
-- PhotonFabric/VideoKit does not redistribute the Impact font. The installer only downloads the original impact32.exe from the official Core Fonts mirror after you accept the Microsoft EULA.
+- PhotonFrame - VideoKit does not redistribute the Impact font. The installer only downloads the original impact32.exe from the official Core Fonts mirror after you accept the Microsoft EULA.
 
 ## Real-ESRGAN (PyTorch)
 - Repository: https://github.com/xinntao/Real-ESRGAN
@@ -1474,7 +1474,7 @@ def _platform_dirs(app: str):
             base_state= xstate/ app
         return {"config": base_cfg, "data": base_data, "cache": base_cache, "state": base_state}
 
-APP = "PhotonFabricVideoKit"
+APP = "PhotonFrameVideoKit"
 dirs = _platform_dirs(APP)
 cfg_dir, data_dir, cache_dir, state_dir = dirs["config"], dirs["data"], dirs["cache"], dirs["state"]
 for p in (cfg_dir, data_dir, cache_dir, state_dir):
@@ -1549,7 +1549,7 @@ ensure("paths", "default_output_dir", str(data_dir / "outputs"))
 ensure("paths", "temp_dir",   str(cache_dir / "tmp"))
 
 # Logging default
-ensure("logging", "file", str(state_dir / "PhotonFabricVideoKit.log"))
+ensure("logging", "file", str(state_dir / "PhotonFrameVideoKit.log"))
 ensure("logging", "level", "INFO")
 
 # Optional ESRGAN defaults from environment (set if provided & not present)
@@ -1965,7 +1965,7 @@ write_third_party_licenses
 
 # Copy config.ini from the archive into XDG_CONFIG_HOME if missing
 CFG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
-CFG_DIR="$CFG_HOME/PhotonFabricVideoKit"
+CFG_DIR="$CFG_HOME/PhotonFrameVideoKit"
 CFG_PATH="$CFG_DIR/config.ini"
 mkdir -p "$CFG_DIR"
 

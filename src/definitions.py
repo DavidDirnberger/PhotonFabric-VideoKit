@@ -10,7 +10,7 @@ from typing import Any, Dict, Final, List, Optional, Set, Tuple, TypedDict, Unio
 __version__ = "0.0.1-alpha"
 
 LOG_DIR = "LOG_DIRECTORY"
-LOG_FILE = "LOG_DIRECTORY/PhotonFabric_VideoKit.log"
+LOG_FILE = "LOG_DIRECTORY/PhotonFrame_VideoKit.log"
 
 # Projektbasis (VM_BASE vom Wrapper, sonst ein Verzeichnis über src/)
 PROJECT_ROOT = Path(
