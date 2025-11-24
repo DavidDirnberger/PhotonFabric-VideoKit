@@ -1198,7 +1198,29 @@ def run_esrgan_per_frame_python(
                     created_after=t0,
                 )
                 seq_count = len(list(up_dir.glob("frame_*.png")))
-                success = (normalized >= total) or (seq_count >= total)
+                produced = max(normalized, seq_count)
+
+                # Toleranz: erlaubte Fehlframes (absolute + relative)
+                try:
+                    miss_abs = int(os.environ.get("AI_TTA_MISS_TOL_FRAMES", "3") or 0)
+                except Exception:
+                    miss_abs = 3
+                try:
+                    miss_rel = float(
+                        os.environ.get("AI_TTA_MISS_TOL_RATIO", "0.01") or 0.0
+                    )
+                except Exception:
+                    miss_rel = 0.01
+                miss_allow = max(miss_abs, int(round((miss_rel or 0.0) * total)))
+                missing = max(0, total - produced)
+                success = missing <= miss_allow
+
+                if success and missing > 0:
+                    co.print_warning(
+                        _("ai_tta_missing_frames").format(
+                            missing=missing, allowed=miss_allow
+                        )
+                    )
 
                 # Optional: TTA-Tmp aufräumen
                 try:

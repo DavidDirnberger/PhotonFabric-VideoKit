@@ -1695,10 +1695,10 @@ def suggest_parallel_workers(
     # 8) "auto" – etwas geringerer Headroom (aggressiver)
     headroom_env = os.environ.get("AI_AUTO_HEADROOM", "").strip()
     try:
-        headroom = float(headroom_env) if headroom_env else 0.25
+        headroom = float(headroom_env) if headroom_env else 0.3
     except Exception:
-        headroom = 0.25
-    headroom = min(0.5, max(0.0, headroom))
+        headroom = 0.3
+    headroom = min(0.5, max(0.0, 1.3 * headroom))
 
     auto_w = int(math.floor(base * (1.0 - headroom)))
     auto_w = max(1, auto_w)

@@ -34,7 +34,7 @@ import consoleOutput as co
 import graphic_helpers as gh
 import image_helper as ih
 import mem_guard as mg
-from i18n import _
+from i18n import _, tr
 from loghandler import print_log
 from pil_image import PIL_OK, Image  # zentrales Pillow-Shim
 
@@ -470,6 +470,7 @@ def fuse_tta_pool_variants_to_updir(
 
     out_dirs = [str(v.out_dir) for v in variants]
     inv_ops_list = [v.inv_ops for v in variants]
+    fuse_warnings: List[str] = []
 
     finished = 0
     ok_count = 0
@@ -488,9 +489,13 @@ def fuse_tta_pool_variants_to_updir(
             print_log(f"[TTA-POOL] FUSE skip (no candidates) for {stem}")
             return False
         if miss:
-            ab.warn_once(
-                f"tta.fuse.missing.{stem}",
-                f"[TTA-POOL] FUSE: {miss} fehlende Varianten für {stem} – mitteln vorhandene.",
+            fuse_warnings.append(
+                tr(
+                    {
+                        "de": f"[TTA-POOL] FUSE: {miss} fehlende Varianten für {stem} – mitteln vorhandene.",
+                        "en": f"[TTA-POOL] FUSE: {miss} missing variants for {stem} – averaging existing ones.",
+                    }
+                )
             )
         return _fuse_tta_outputs_to_file(var_outputs, up_dir / f"{stem}_out.png")
 
@@ -558,6 +563,10 @@ def fuse_tta_pool_variants_to_updir(
                     hint=_("cancel_hint"),
                     ui_phase_id=ui_phase_id,
                 )
+
+    if fuse_warnings:
+        # Sammle und gib alle TTA-FUSE Hinweise einmal am Ende aus
+        co.print_warning("\n".join(sorted(set(fuse_warnings))))
 
     return ok_count
 
