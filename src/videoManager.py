@@ -111,14 +111,13 @@ def interactive_menu(opts: List[OptionEntry]) -> None:
 
     co.print_list(
         items,
-        color="light_yellow",
         descriptions=descriptions,
         seperator="-",
         comment_col=32,
     )
     co.print_exit()
 
-    choice = input(co.return_promt(_("select_action_prompt"))).strip()
+    choice = input(co.return_promt(_("select_action_prompt") + " ")).strip()
     if choice == "0":
         sys.exit(0)
 

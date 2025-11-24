@@ -315,7 +315,7 @@ def print_start(method: str) -> None:
 def print_error(message: str) -> None:
     print(
         "\n"
-        + c.combine("bold", "red")
+        + c.combine("bold", "soft_red")
         + " ❌ "
         + _("error_prefix")
         + f" {message}"
