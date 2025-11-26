@@ -1747,11 +1747,12 @@ else
   INSTALL_CODEFORMER=false
 fi
 
-# Conda bootstrap
-if ! command -v conda &>/dev/null; then
+# Conda bootstrap (force local install if missing OR not using our CONDA_DIR)
+CURRENT_CONDA_BIN="$(command -v conda || true)"
+if [[ -z "$CURRENT_CONDA_BIN" || "$CURRENT_CONDA_BIN" != "$CONDA_DIR/bin/conda" ]]; then
   ensure_aria2c
   wait_for_net 999999 10
-  log "Conda not found - installing Miniconda locally..."
+  log "Conda missing or not at $CONDA_DIR - installing Miniconda locally..."
   OS_NAME_BOOT="$(detect_os_name)"
   case "$OS_NAME_BOOT" in
     mac)  INSTALLER="Miniconda3-latest-MacOSX-x86_64.sh" ;;            # simple default; arm users may switch manually
