@@ -1780,14 +1780,19 @@ if command -v mamba &>/dev/null; then CMD_INSTALL="mamba"; else CMD_INSTALL="con
 export CONDA_SUBDIR="linux-64"
 
 ROOT_CONDARC="$CONDA_DIR/.condarc"
-cat > "$ROOT_CONDARC" <<'YAML'
-channels:
-  - conda-forge
-  - pytorch
-  - defaults
-channel_priority: strict
-add_pip_as_python_dependency: false
-YAML
+INCLUDE_DEFAULTS="${VIDEO_ALLOW_ANACONDA_DEFAULTS:-0}"
+{
+  echo "channels:"
+  echo "  - conda-forge"
+  echo "  - pytorch"
+  if [[ "$INCLUDE_DEFAULTS" == "1" ]]; then
+    echo "  - defaults"
+  else
+    warn "Skipping 'defaults' channel to avoid Anaconda ToS prompts. Set VIDEO_ALLOW_ANACONDA_DEFAULTS=1 to re-enable."
+  fi
+  echo "channel_priority: strict"
+  echo "add_pip_as_python_dependency: false"
+} > "$ROOT_CONDARC"
 export CONDARC="$ROOT_CONDARC"
 export CONDA_HTTP_TIMEOUT=60
 export CONDA_REMOTE_CONNECT_TIMEOUT_SECS=30
