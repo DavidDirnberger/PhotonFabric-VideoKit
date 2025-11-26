@@ -1704,6 +1704,7 @@ if is_case_insensitive_fs "$CONDA_PKGS_DIRS"; then
   warn "CONDA_PKGS_DIRS is on a case-insensitive filesystem; switching to $HOME/.photonframe_conda/pkgs."
   CONDA_PKGS_DIRS="$HOME/.photonframe_conda/pkgs"
 fi
+mkdir -p "$(dirname "$CONDA_DIR")"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CMD_INSTALL="${CMD_INSTALL:-conda}"
 export PATH="$CONDA_DIR/bin:$PATH"
@@ -1762,6 +1763,9 @@ if ! command -v conda &>/dev/null; then
   bash "/tmp/$INSTALLER" -b -p "$CONDA_DIR"
   rm -f "/tmp/$INSTALLER"
   export PATH="$CONDA_DIR/bin:$PATH"
+  if [ ! -x "$CONDA_DIR/bin/conda" ]; then
+    err "Miniconda installation failed at $CONDA_DIR (conda binary missing)."
+  fi
 fi
 
 # Accept Anaconda ToS early to avoid repeated prompts (needs conda binary in PATH)
@@ -1783,6 +1787,7 @@ if command -v mamba &>/dev/null; then CMD_INSTALL="mamba"; else CMD_INSTALL="con
 export CONDA_SUBDIR="linux-64"
 
 ROOT_CONDARC="$CONDA_DIR/.condarc"
+rm -f "$ROOT_CONDARC"
 if [[ "${VIDEO_ALLOW_ANACONDA_DEFAULTS:-0}" == "1" ]]; then
   cat > "$ROOT_CONDARC" <<'YAML'
 channels:
@@ -1794,10 +1799,6 @@ add_pip_as_python_dependency: false
 default_channels:
   - https://repo.anaconda.com/pkgs/main
   - https://repo.anaconda.com/pkgs/r
-custom_multichannels:
-  defaults:
-    - https://repo.anaconda.com/pkgs/main
-    - https://repo.anaconda.com/pkgs/r
 YAML
 else
   cat > "$ROOT_CONDARC" <<'YAML'
@@ -1807,8 +1808,6 @@ channels:
 channel_priority: strict
 add_pip_as_python_dependency: false
 default_channels: []
-custom_multichannels:
-  defaults: []
 YAML
   warn "Skipping 'defaults' channel to avoid Anaconda ToS prompts. Set VIDEO_ALLOW_ANACONDA_DEFAULTS=1 to re-enable."
 fi
