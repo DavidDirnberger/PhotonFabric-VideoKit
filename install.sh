@@ -186,7 +186,9 @@ apt_install_safe() {
 
 # ─────────────────────────── Networking / download ──────────────────────────
 ask_question() {
-  local prompt="$1" default="${2:-y}" reply display_default="$default"
+  local prompt="$1" default reply display_default
+  default="${2:-y}"
+  display_default="$default"
   # Sprache: Default-Buchstaben anpassen (y -> j)
   if [[ "${VM_LANG:-en}" == "de" ]]; then
     case "${default,,}" in
