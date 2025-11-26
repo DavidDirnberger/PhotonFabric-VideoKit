@@ -204,6 +204,40 @@ ask_question() {
   done
 }
 
+is_case_insensitive_fs() {
+  # Detect case-insensitive mounts (e.g., Windows/NTFS via WSL drvfs)
+  local dir="${1:-.}" probe mountpoint options
+  probe="$dir"
+  while [[ ! -d "$probe" && "$probe" != "/" ]]; do
+    probe="$(dirname "$probe")"
+  done
+  mountpoint="$(stat -c %m "$probe" 2>/dev/null || stat -f %m "$probe" 2>/dev/null || true)"
+  if [[ -n "$mountpoint" ]]; then
+    while IFS=' ' read -r _ target _ opts _; do
+      if [[ "$target" == "$mountpoint" ]]; then
+        options="$opts"
+        break
+      fi
+    done </proc/mounts 2>/dev/null || true
+    if [[ "$options" == *"case=off"* || "$options" == *"ignore_case=1"* ]]; then
+      return 0
+    fi
+  fi
+
+  local lower="$probe/.case_test_$$.lower" upper="$probe/.case_test_$$.LOWER"
+  rm -f "$lower" "$upper"
+  if touch "$lower" 2>/dev/null && touch "$upper" 2>/dev/null; then
+    local inode_lower inode_upper
+    inode_lower=$(stat -c %i "$lower" 2>/dev/null || stat -f %i "$lower" 2>/dev/null || echo "")
+    inode_upper=$(stat -c %i "$upper" 2>/dev/null || stat -f %i "$upper" 2>/dev/null || echo "")
+    rm -f "$lower" "$upper"
+    [[ -n "$inode_lower" && "$inode_lower" == "$inode_upper" ]] && return 0
+    return 1
+  fi
+  rm -f "$lower" "$upper"
+  return 1
+}
+
 get_site_packages() {
   python - <<'PY'
 import sysconfig
@@ -1638,14 +1672,28 @@ if command -v sudo >/dev/null 2>&1 && [ "$EUID" -ne 0 ] && [ "${SKIP_SUDO_PREFLI
 fi
 
 VENV_DIR="$INSTALL_DIR/venv"
-CONDA_DIR="${CONDA_DIR:-$INSTALL_DIR/miniconda}"
+CONDA_DIR_DEFAULT="${CONDA_DIR:-$INSTALL_DIR/miniconda}"
+CONDA_DIR="$CONDA_DIR_DEFAULT"
+CONDA_PKGS_DIRS_DEFAULT="$INSTALL_DIR/.conda_pkgs"
+if is_case_insensitive_fs "$CONDA_DIR"; then
+  warn "Case-insensitive filesystem detected at $CONDA_DIR (likely Windows/NTFS under WSL). Conda needs case-sensitive paths."
+  CONDA_DIR="$HOME/.photonframe_conda/miniconda"
+  : "${CONDA_PKGS_DIRS:=$HOME/.photonframe_conda/pkgs}"
+  log "Using case-sensitive Conda dir: $CONDA_DIR (pkgs: $CONDA_PKGS_DIRS)"
+else
+  : "${CONDA_PKGS_DIRS:=$CONDA_PKGS_DIRS_DEFAULT}"
+fi
+if is_case_insensitive_fs "$CONDA_PKGS_DIRS"; then
+  warn "CONDA_PKGS_DIRS is on a case-insensitive filesystem; switching to $HOME/.photonframe_conda/pkgs."
+  CONDA_PKGS_DIRS="$HOME/.photonframe_conda/pkgs"
+fi
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CMD_INSTALL="${CMD_INSTALL:-conda}"
 export PATH="$CONDA_DIR/bin:$PATH"
 CONDA_PREFIX="$CONDA_DIR/envs/$ENV_NAME"
 
 # Persistent caches
-export CONDA_PKGS_DIRS="$INSTALL_DIR/.conda_pkgs"
+export CONDA_PKGS_DIRS
 export PIP_CACHE_DIR="$INSTALL_DIR/.pipcache"
 mkdir -p "$CONDA_PKGS_DIRS" "$PIP_CACHE_DIR" "$INSTALL_DIR/.torchcache" "$INSTALL_DIR/.cache"
 
